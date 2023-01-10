@@ -59,6 +59,17 @@ void work_queue_destroy(work_queue_t * work_queue)
   free(work_queue);
 }
 
+bool work_queue_is_empty(work_queue_t * work_queue)
+{
+  pthread_mutex_lock(&work_queue->mutex);
+
+  bool is_empty = work_queue_empty_condition(work_queue);
+
+  pthread_mutex_unlock(&work_queue->mutex);
+
+  return is_empty;
+}
+
 bool work_queue_is_full(work_queue_t * work_queue)
 {
   pthread_mutex_lock(&work_queue->mutex);
@@ -80,11 +91,31 @@ void work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 
   memcpy(&work_queue->circular_buffer[idx], p_work, sizeof(work_t));
 
-  work_queue->tail = inc_mod(idx, work_queue->capacity);
-
   if (work_queue_empty_condition(work_queue))
   {
     work_queue->head = idx;
+  }
+
+  work_queue->tail = inc_mod(idx, work_queue->capacity);
+
+  pthread_mutex_unlock(&work_queue->mutex);
+}
+
+void work_queue_remove(work_queue_t * work_queue, work_t * p_work)
+{
+  pthread_mutex_lock(&work_queue->mutex);
+
+  assert(!work_queue_empty_condition(work_queue));
+
+  size_t idx = work_queue->head;
+  
+  memcpy(p_work, &work_queue->circular_buffer[idx], sizeof(work_t));
+
+  work_queue->head = inc_mod(idx, work_queue->capacity);
+
+  if (work_queue_full_condition(work_queue)) /* underflow */
+  {
+    work_queue->head = work_queue->capacity; /* empty condition */
   }
 
   pthread_mutex_unlock(&work_queue->mutex);
