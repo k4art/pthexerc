@@ -5,6 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef enum err_e
+{
+  SUCCESS,
+  ERROR_UNDERFLOW,
+  ERROR_OVERFLOW,
+} err_t;
+
 #if defined(DEBUG)
 
 #define CHECK_ERROR(error, action_text)              \
