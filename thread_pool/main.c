@@ -7,6 +7,7 @@ int main(void)
 {
   tpool_t * tpool = tpool_create(THREADS_NUMBER);
 
+  tpool_wait(tpool);
   tpool_destroy(tpool);
 
   return 0;

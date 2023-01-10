@@ -47,3 +47,13 @@ void tpool_destroy(tpool_t * tpool)
   free(tpool);
 }
 
+void tpool_wait(tpool_t * tpool)
+{
+  for (size_t i = 0; i < tpool->threads_number; i++)
+  {
+    int ret = pthread_join(tpool->threads[i], NULL);
+
+    CHECK_ERROR(ret, "Joining the threads in a pool.");
+  }
+}
+
