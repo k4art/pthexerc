@@ -18,7 +18,7 @@ work_queue_t * work_queue_create(size_t capacity);
 
 void work_queue_destroy(work_queue_t * work_queue);
 
-bool work_queue_is_full(const work_queue_t * work_queue);
+bool work_queue_is_full(work_queue_t * work_queue);
 void work_queue_add(work_queue_t * work_queue, const work_t * p_work);
 
 #endif
