@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "errors.h"
 #include "work_queue.h"
@@ -18,7 +19,18 @@ struct tpool_s
 
 static void * thread_routine(void * arg)
 {
-  (void) arg;
+  work_queue_t * work_queue = arg;
+
+  // wait enqueueing works
+  sleep(1);
+
+  work_t work;
+  while (!work_queue_is_empty(work_queue))
+  {
+    work_queue_remove(work_queue, &work);
+
+    work.routine(work.arg);
+  }
 
   return NULL;
 }
@@ -38,7 +50,7 @@ tpool_t * tpool_create(size_t threads_number)
 
   for (size_t i = 0; i < threads_number; i++)
   {
-    int ret = pthread_create(&threads[i], NULL, thread_routine, NULL);
+    int ret = pthread_create(&threads[i], NULL, thread_routine, tpool->work_queue);
 
     CHECK_ERROR(ret, "Creating threads for tpool.");
   }
