@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include <assert.h>
 
 #include "work_queue.h"
@@ -10,6 +11,8 @@ struct work_queue_s
   size_t   capacity;
   size_t   head;
   size_t   tail;
+
+  pthread_mutex_t mutex;
 };
 
 static size_t inc_mod(size_t n, size_t mod)
@@ -35,11 +38,14 @@ work_queue_t * work_queue_create(size_t capacity)
   work_queue->head = capacity; /* empty condition*/
   work_queue->tail = 0;
 
+  pthread_mutex_init(&work_queue->mutex, NULL);
+
   return work_queue;
 }
 
 void work_queue_destroy(work_queue_t * work_queue)
 {
+  pthread_mutex_destroy(&work_queue->mutex);
   free(work_queue);
 }
 
@@ -50,6 +56,8 @@ bool work_queue_is_full(const work_queue_t * work_queue)
 
 void work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 {
+  pthread_mutex_lock(&work_queue->mutex);
+
   assert(!work_queue_is_full(work_queue));
 
   size_t idx = work_queue->tail;
@@ -62,5 +70,7 @@ void work_queue_add(work_queue_t * work_queue, const work_t * p_work)
   {
     work_queue->head = idx;
   }
+
+  pthread_mutex_unlock(&work_queue->mutex);
 }
 
