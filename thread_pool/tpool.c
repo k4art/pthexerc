@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "errors.h"
 #include "work_queue.h"
@@ -25,12 +26,14 @@ static void * thread_routine(void * arg)
   sleep(1);
 
   work_t work;
-  while (!work_queue_is_empty(work_queue))
-  {
-    work_queue_remove(work_queue, &work);
+  err_t  err;
 
+  while ((err = work_queue_remove(work_queue, &work)) == SUCCESS)
+  {
     work.routine(work.arg);
   }
+
+  assert(err == ERROR_UNDERFLOW);
 
   return NULL;
 }

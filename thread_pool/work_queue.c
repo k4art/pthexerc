@@ -3,6 +3,8 @@
 #include <pthread.h>
 #include <assert.h>
 
+#include "errors.h"
+
 #include "work_queue.h"
 
 struct work_queue_s
@@ -81,11 +83,15 @@ bool work_queue_is_full(work_queue_t * work_queue)
   return is_full;
 }
 
-void work_queue_add(work_queue_t * work_queue, const work_t * p_work)
+err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 {
   pthread_mutex_lock(&work_queue->mutex);
 
-  assert(!work_queue_full_condition(work_queue));
+  if (work_queue_full_condition(work_queue))
+  {
+    pthread_mutex_unlock(&work_queue->mutex);
+    return ERROR_OVERFLOW;
+  }
 
   size_t idx = work_queue->tail;
 
@@ -99,13 +105,19 @@ void work_queue_add(work_queue_t * work_queue, const work_t * p_work)
   work_queue->tail = inc_mod(idx, work_queue->capacity);
 
   pthread_mutex_unlock(&work_queue->mutex);
+
+  return SUCCESS;
 }
 
-void work_queue_remove(work_queue_t * work_queue, work_t * p_work)
+err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
 {
   pthread_mutex_lock(&work_queue->mutex);
 
-  assert(!work_queue_empty_condition(work_queue));
+  if (work_queue_empty_condition(work_queue))
+  {
+    pthread_mutex_unlock(&work_queue->mutex);
+    return ERROR_UNDERFLOW;
+  }
 
   size_t idx = work_queue->head;
   
@@ -119,5 +131,7 @@ void work_queue_remove(work_queue_t * work_queue, work_t * p_work)
   }
 
   pthread_mutex_unlock(&work_queue->mutex);
+
+  return SUCCESS;
 }
 
