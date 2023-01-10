@@ -7,11 +7,13 @@
 
 #include "tpool.h"
 
+static const size_t MAX_WORKS_WAITING = 128;
+
 struct tpool_s
 {
   pthread_t    * threads;
   size_t         threads_number;
-  work_queue_t   work_queue;
+  work_queue_t * work_queue;
 };
 
 static void * thread_routine(void * arg)
@@ -32,6 +34,8 @@ tpool_t * tpool_create(size_t threads_number)
   tpool->threads        = threads;
   tpool->threads_number = threads_number;
 
+  tpool->work_queue = work_queue_create(MAX_WORKS_WAITING);
+
   for (size_t i = 0; i < threads_number; i++)
   {
     int ret = pthread_create(&threads[i], NULL, thread_routine, NULL);
@@ -44,6 +48,8 @@ tpool_t * tpool_create(size_t threads_number)
 
 void tpool_destroy(tpool_t * tpool)
 {
+  work_queue_destroy(tpool->work_queue);
+
   free(tpool);
 }
 
@@ -55,5 +61,16 @@ void tpool_wait(tpool_t * tpool)
 
     CHECK_ERROR(ret, "Joining the threads in a pool.");
   }
+}
+
+void tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
+{
+  work_t work =
+  {
+    .routine = routine,
+    .arg     = arg,
+  };
+
+   work_queue_add(tpool->work_queue, &work);
 }
 

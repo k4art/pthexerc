@@ -1,6 +1,9 @@
 #ifndef WORK_QUEUE_H
 #define WORK_QUEUE_H
 
+#include <stdlib.h>
+#include <stdbool.h>
+
 typedef void (* work_routine_t)(void * arg);
 
 typedef struct work_s
@@ -9,12 +12,14 @@ typedef struct work_s
   void           * arg;
 } work_t;
 
-typedef struct work_queue_s
-{
-  work_t * circular_buffer;
-  size_t   front;
-  size_t   back;
-} work_queue_t;
+typedef struct work_queue_s work_queue_t;
+
+work_queue_t * work_queue_create(size_t capacity);
+
+void work_queue_destroy(work_queue_t * work_queue);
+
+bool work_queue_is_full(const work_queue_t * work_queue);
+void work_queue_add(work_queue_t * work_queue, const work_t * p_work);
 
 #endif
 
