@@ -14,6 +14,12 @@ debug: program
 release: CFLAGS += -O3
 release: program
 
+LOG_WORKS ?= 0
+
+ifneq ($(LOG_WORKS), 0)
+	CFLAGS += -DLOG_WORKS
+endif
+
 CC = gcc $(CFLAGS)
 
 program: $(OBJS)
