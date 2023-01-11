@@ -22,18 +22,16 @@ static void * thread_routine(void * arg)
 {
   work_queue_t * work_queue = arg;
 
-  // wait enqueueing works
-  sleep(1);
-
   work_t work;
-  err_t  err;
+  err_t  err = SUCCESS;
 
-  while ((err = work_queue_remove(work_queue, &work)) == SUCCESS)
+  while (err != ERROR_OUT_OF_SERVICE)
   {
-    work.routine(work.arg);
+    while ((err = work_queue_remove(work_queue, &work)) == SUCCESS)
+    {
+      work.routine(work.arg);
+    }
   }
-
-  assert(err == ERROR_UNDERFLOW);
 
   return NULL;
 }
@@ -70,6 +68,8 @@ void tpool_destroy(tpool_t * tpool)
 
 void tpool_wait(tpool_t * tpool)
 {
+  work_queue_stop_accepting(tpool->work_queue);
+  
   for (size_t i = 0; i < tpool->threads_number; i++)
   {
     int ret = pthread_join(tpool->threads[i], NULL);
