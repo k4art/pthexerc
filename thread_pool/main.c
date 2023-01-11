@@ -5,8 +5,8 @@
 
 #include "tpool.h"
 
-static const size_t THREADS_NUMBER    = 4;
-static const size_t WORK_ITEMS_NUMBER = 20;
+static const size_t THREADS_NUMBER    = 8;
+static const size_t WORK_ITEMS_NUMBER = 1000;
 
 static void work_routine(void * arg)
 {

@@ -9,7 +9,7 @@
 
 #include "tpool.h"
 
-static const size_t MAX_WORKS_WAITING = 128;
+static const size_t MAX_WORKS_WAITING = 1024;
 
 struct tpool_s
 {
