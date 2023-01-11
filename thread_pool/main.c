@@ -15,10 +15,10 @@ static void work_routine(void * arg)
 
   *value += 1000;
 
-  // TODO: synchronize writing to stdout
+  // Not all logs might appear in stdout due to lack of synchronization
   printf("tid=%lu, old=%d, val=%d\n", pthread_self(), old, *value);
 
-  if (*value % 2)
+  if (*value % 2 != 0)
   {
     usleep(100 * 1000);
   }
