@@ -10,6 +10,7 @@ typedef enum err_e
   SUCCESS,
   ERROR_UNDERFLOW,
   ERROR_OVERFLOW,
+  ERROR_OUT_OF_SERVICE,
 } err_t;
 
 #if defined(DEBUG)

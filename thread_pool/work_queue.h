@@ -26,5 +26,8 @@ bool work_queue_is_empty(work_queue_t * work_queue);
 err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work);
 err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work);
 
+void work_queue_wait_until_not_empty(work_queue_t * work_queue);
+void work_queue_stop_accepting(work_queue_t * work_queue);
+
 #endif
 
