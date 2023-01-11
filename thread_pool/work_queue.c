@@ -15,7 +15,7 @@ struct work_queue_s
   size_t   tail;
 
   pthread_mutex_t mutex;
-  pthread_cond_t  no_longer_empty_cv;
+  pthread_cond_t  no_work_cv;
 
   bool stopped_accepting;
 };
@@ -53,7 +53,7 @@ work_queue_t * work_queue_create(size_t capacity)
   work_queue->tail = 0;
 
   pthread_mutex_init(&work_queue->mutex, NULL);
-  pthread_cond_init(&work_queue->no_longer_empty_cv, NULL);
+  pthread_cond_init(&work_queue->no_work_cv, NULL);
 
   work_queue->stopped_accepting = false;
 
@@ -63,7 +63,7 @@ work_queue_t * work_queue_create(size_t capacity)
 void work_queue_destroy(work_queue_t * work_queue)
 {
   pthread_mutex_destroy(&work_queue->mutex);
-  pthread_cond_destroy(&work_queue->no_longer_empty_cv);
+  pthread_cond_destroy(&work_queue->no_work_cv);
 
   free(work_queue);
 }
@@ -90,13 +90,13 @@ bool work_queue_is_full(work_queue_t * work_queue)
   return is_full;
 }
 
-void work_queue_wait_until_not_empty(work_queue_t * work_queue)
+void work_queue_wait_while_no_work(work_queue_t * work_queue)
 {
   pthread_mutex_lock(&work_queue->mutex);
 
-  while (work_queue_empty_condition(work_queue))
+  while (work_queue_empty_condition(work_queue) || !work_queue->stopped_accepting)
   {
-    pthread_cond_wait(&work_queue->no_longer_empty_cv, &work_queue->mutex);
+    pthread_cond_wait(&work_queue->no_work_cv, &work_queue->mutex);
   }
 
   pthread_mutex_unlock(&work_queue->mutex);
@@ -127,7 +127,7 @@ err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
   if (work_queue_empty_condition(work_queue))
   {
     work_queue->head = idx;
-    pthread_cond_broadcast(&work_queue->no_longer_empty_cv);
+    pthread_cond_broadcast(&work_queue->no_work_cv);
   }
 
   work_queue->tail = inc_mod(idx, work_queue->capacity);
@@ -178,6 +178,8 @@ void work_queue_stop_accepting(work_queue_t * work_queue)
   assert(!work_queue->stopped_accepting);
 
   work_queue->stopped_accepting = true;
+
+  pthread_cond_broadcast(&work_queue->no_work_cv);
 
   pthread_mutex_unlock(&work_queue->mutex);
 }

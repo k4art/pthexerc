@@ -27,6 +27,8 @@ static void * thread_routine(void * arg)
 
   while (err != ERROR_OUT_OF_SERVICE)
   {
+    work_queue_wait_while_no_work(work_queue);
+
     while ((err = work_queue_remove(work_queue, &work)) == SUCCESS)
     {
       work.routine(work.arg);
