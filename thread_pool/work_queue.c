@@ -52,8 +52,8 @@ work_queue_t * work_queue_create(size_t capacity)
   work_queue->head = capacity; /* empty condition*/
   work_queue->tail = 0;
 
-  pthread_mutex_init(&work_queue->mutex, NULL);
-  pthread_cond_init(&work_queue->no_work_cv, NULL);
+  CHECKED(pthread_mutex_init(&work_queue->mutex, NULL));
+  CHECKED(pthread_cond_init(&work_queue->no_work_cv, NULL));
 
   work_queue->stopped_accepting = false;
 
@@ -62,60 +62,60 @@ work_queue_t * work_queue_create(size_t capacity)
 
 void work_queue_destroy(work_queue_t * work_queue)
 {
-  pthread_mutex_destroy(&work_queue->mutex);
-  pthread_cond_destroy(&work_queue->no_work_cv);
+  CHECKED(pthread_mutex_destroy(&work_queue->mutex));
+  CHECKED(pthread_cond_destroy(&work_queue->no_work_cv));
 
   free(work_queue);
 }
 
 bool work_queue_is_empty(work_queue_t * work_queue)
 {
-  pthread_mutex_lock(&work_queue->mutex);
+  CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   bool is_empty = work_queue_empty_condition(work_queue);
 
-  pthread_mutex_unlock(&work_queue->mutex);
+  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 
   return is_empty;
 }
 
 bool work_queue_is_full(work_queue_t * work_queue)
 {
-  pthread_mutex_lock(&work_queue->mutex);
+  CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   bool is_full = work_queue_full_condition(work_queue);
 
-  pthread_mutex_unlock(&work_queue->mutex);
+  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 
   return is_full;
 }
 
 void work_queue_wait_while_no_work(work_queue_t * work_queue)
 {
-  pthread_mutex_lock(&work_queue->mutex);
+  CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   while (work_queue_empty_condition(work_queue) || !work_queue->stopped_accepting)
   {
     pthread_cond_wait(&work_queue->no_work_cv, &work_queue->mutex);
   }
 
-  pthread_mutex_unlock(&work_queue->mutex);
+  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 }
 
 err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 {
-  pthread_mutex_lock(&work_queue->mutex);
+  CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   if (work_queue->stopped_accepting)
   {
-    pthread_mutex_unlock(&work_queue->mutex);
+    CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 
     return ERROR_OUT_OF_SERVICE;
   }
 
   if (work_queue_full_condition(work_queue))
   {
-    pthread_mutex_unlock(&work_queue->mutex);
+    CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 
     return ERROR_OVERFLOW;
   }
@@ -132,14 +132,14 @@ err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 
   work_queue->tail = inc_mod(idx, work_queue->capacity);
 
-  pthread_mutex_unlock(&work_queue->mutex);
+  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 
   return SUCCESS;
 }
 
 err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
 {
-  pthread_mutex_lock(&work_queue->mutex);
+  CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   if (work_queue_empty_condition(work_queue))
   {
@@ -150,7 +150,7 @@ err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
       err = ERROR_OUT_OF_SERVICE;
     }
 
-    pthread_mutex_unlock(&work_queue->mutex);
+    CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 
     return err;
   }
@@ -166,14 +166,14 @@ err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
     work_queue->head = work_queue->capacity; /* empty condition */
   }
 
-  pthread_mutex_unlock(&work_queue->mutex);
+  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 
   return SUCCESS;
 }
 
 void work_queue_stop_accepting(work_queue_t * work_queue)
 {
-  pthread_mutex_lock(&work_queue->mutex);
+  CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   assert(!work_queue->stopped_accepting);
 
@@ -181,6 +181,6 @@ void work_queue_stop_accepting(work_queue_t * work_queue)
 
   pthread_cond_broadcast(&work_queue->no_work_cv);
 
-  pthread_mutex_unlock(&work_queue->mutex);
+  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 }
 

@@ -40,4 +40,10 @@ typedef enum err_e
 
 #endif
 
+#define CHECKED(statement)                         \
+  do {                                             \
+    int err = statement;                           \
+    CHECK_ERROR(err, #statement);                  \
+  } while (0)
+
 #endif
