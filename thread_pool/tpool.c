@@ -13,9 +13,10 @@ static const size_t MAX_WORKS_WAITING = 1024;
 
 struct tpool_s
 {
-  pthread_t    * threads;
   size_t         threads_number;
   work_queue_t * work_queue;
+
+  pthread_t      threads[];
 };
 
 static void * thread_routine(void * arg)
@@ -46,7 +47,6 @@ tpool_t * tpool_create(size_t threads_number)
   tpool_t   * tpool   = memory;
   pthread_t * threads = memory + sizeof(tpool_t);
 
-  tpool->threads        = threads;
   tpool->threads_number = threads_number;
 
   tpool->work_queue = work_queue_create(MAX_WORKS_WAITING);
