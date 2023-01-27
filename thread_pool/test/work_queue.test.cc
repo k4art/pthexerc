@@ -22,7 +22,7 @@ static void dummy_work_routine(void * arg)
 { .routine = dummy_work_routine,       \
   .arg = (void *) dummy_work_routine }
 
-TEST(WorkQueue, keeping_single_element)
+TEST(WorkQueue, add_and_remove_by_single_element)
 {
   work_t temp;
   const work_t work = DUMMY_WORK;
@@ -38,7 +38,7 @@ TEST(WorkQueue, keeping_single_element)
   }
 }
 
-TEST(WorkQueue, keeping_many_elements)
+TEST(WorkQueue, add_and_remove_by_many_elements)
 {
   work_t temp;
   const work_t work = DUMMY_WORK;
