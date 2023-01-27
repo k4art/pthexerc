@@ -22,27 +22,29 @@ struct work_queue_s
 
 static size_t inc_mod(size_t n, size_t mod)
 {
+  assert(mod != 0);
+
   return (n + 1) % mod;
 }
 
 static bool work_queue_empty_condition(work_queue_t * work_queue)
 {
-  assert(pthread_mutex_trylock(&work_queue->mutex) != 0);
-
   return work_queue->head == work_queue->capacity;
 }
 
 static bool work_queue_full_condition(work_queue_t * work_queue)
 {
-  assert(pthread_mutex_trylock(&work_queue->mutex) != 0);
-
   return work_queue->tail == work_queue->head;
 }
 
 work_queue_t * work_queue_create(size_t capacity)
 {
+  assert(capacity > 0);
+  
   size_t   size   = sizeof(work_queue_t) + sizeof(work_t) * capacity;
   void   * memory = malloc(size);
+
+  assert(memory != NULL);
 
   work_queue_t * work_queue = memory;
 
@@ -57,11 +59,15 @@ work_queue_t * work_queue_create(size_t capacity)
 
   work_queue->stopped_accepting = false;
 
+  assert(is_empty(work_queue));
+  
   return work_queue;
 }
 
 void work_queue_destroy(work_queue_t * work_queue)
 {
+  assert(work_queue != NULL);
+  
   CHECKED(pthread_mutex_destroy(&work_queue->mutex));
   CHECKED(pthread_cond_destroy(&work_queue->no_work_cv));
 
@@ -71,6 +77,7 @@ void work_queue_destroy(work_queue_t * work_queue)
 bool work_queue_is_empty(work_queue_t * work_queue)
 {
   CHECKED(pthread_mutex_lock(&work_queue->mutex));
+  assert(work_queue != NULL);
 
   bool is_empty = work_queue_empty_condition(work_queue);
 
@@ -82,6 +89,7 @@ bool work_queue_is_empty(work_queue_t * work_queue)
 bool work_queue_is_full(work_queue_t * work_queue)
 {
   CHECKED(pthread_mutex_lock(&work_queue->mutex));
+  assert(work_queue != NULL);
 
   bool is_full = work_queue_full_condition(work_queue);
 
@@ -92,6 +100,8 @@ bool work_queue_is_full(work_queue_t * work_queue)
 
 void work_queue_wait_while_no_work(work_queue_t * work_queue)
 {
+  assert(work_queue != NULL);
+
   CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   while (work_queue_empty_condition(work_queue) || !work_queue->stopped_accepting)
@@ -104,6 +114,8 @@ void work_queue_wait_while_no_work(work_queue_t * work_queue)
 
 err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 {
+  assert(work_queue != NULL);
+ 
   CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   if (work_queue->stopped_accepting)
@@ -139,6 +151,8 @@ err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 
 err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
 {
+  assert(work_queue != NULL);
+ 
   CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   if (work_queue_empty_condition(work_queue))
@@ -173,6 +187,8 @@ err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
 
 void work_queue_stop_accepting(work_queue_t * work_queue)
 {
+  assert(work_queue != NULL);
+
   CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
   assert(!work_queue->stopped_accepting);
