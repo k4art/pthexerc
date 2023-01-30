@@ -5,6 +5,8 @@
 
 #include "errors.h"
 
+#include "internals/malloc_c.h"
+
 #include "work_queue.h"
 
 typedef struct queue_node_s queue_node_t;
@@ -32,21 +34,6 @@ static size_t inc_mod(size_t n, size_t mod)
   assert(mod != 0);
 
   return (n + 1) % mod;
-}
-
-static void * malloc_c(size_t size)
-{
-  void * memory = malloc(size);
-
-  if (memory == NULL)
-  {
-    fprintf(stderr, "malloc() returned NULL.\n");
-    fprintf(stderr, "exiting...");
-
-    exit(EXIT_FAILURE);
-  }
-
-  return memory;
 }
 
 static bool is_empty(work_queue_t * work_queue)
