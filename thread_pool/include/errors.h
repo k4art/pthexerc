@@ -1,5 +1,5 @@
-#ifndef ERRORS_H
-#define ERRORS_H
+#ifndef ERRORS_THREAD_POOL_H
+#define ERRORS_THREAD_POOL_H
 
 #include <stdio.h>
 #include <stdlib.h>
