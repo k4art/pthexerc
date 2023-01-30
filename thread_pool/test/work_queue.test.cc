@@ -5,6 +5,8 @@ extern "C"
   #include "work_queue.h"
 }
 
+/******************************************************/
+
 bool operator == (const work_t & lhs, const work_t & rhs)
 {
   bool same_routine = lhs.routine == rhs.routine;
@@ -18,13 +20,37 @@ static void dummy_work_routine(void * arg)
   // nothing
 }
 
-#define DUMMY_WORK                     \
-{ .routine = dummy_work_routine,       \
-  .arg = (void *) dummy_work_routine }
+class WorkQueue : public testing::Test
+{
+protected:
+  static const size_t DUMMIES_NUMBER = 1024;
 
-static const work_t dummy_work = DUMMY_WORK;
+  static work_t dummies_pool[DUMMIES_NUMBER];
+  
+protected:
+  void SetUp() override
+  {
+    for (size_t i = 0; i < DUMMIES_NUMBER; i++)
+    {
+      /* Make works different using `arg` field */
 
-TEST(WorkQueue, creates_empty_queue)
+      dummies_pool[i].routine = dummy_work_routine;
+      dummies_pool[i].arg     = (void *) i;
+    }
+  }
+
+  static const work_t * DummyWork(size_t n)
+  {
+    return &dummies_pool[n % DUMMIES_NUMBER];
+  }
+};
+
+work_t WorkQueue::dummies_pool[DUMMIES_NUMBER];
+
+/******************************************************/
+
+
+TEST_F(WorkQueue, creates_empty_queue)
 {
   work_queue_t * queue = work_queue_create(3);
   
@@ -33,7 +59,7 @@ TEST(WorkQueue, creates_empty_queue)
   work_queue_destroy(queue);
 }
 
-TEST(WorkQueue, add_and_remove_by_single_element)
+TEST_F(WorkQueue, add_and_remove_by_single_element)
 {
   work_t temp;
 
@@ -41,19 +67,18 @@ TEST(WorkQueue, add_and_remove_by_single_element)
 
   for (size_t i = 0; i < 7; i++)
   {
-    work_queue_add(queue, &dummy_work);
+    work_queue_add(queue, DummyWork(i));
     work_queue_remove(queue, &temp);
 
-    EXPECT_EQ(dummy_work, temp);
+    EXPECT_EQ(*DummyWork(i), temp);
   }
 
   work_queue_destroy(queue);
 }
 
-TEST(WorkQueue, add_and_remove_by_many_elements)
+TEST_F(WorkQueue, add_and_remove_by_many_elements)
 {
   work_t temp;
-  const work_t work = DUMMY_WORK;
 
   work_queue_t * queue = work_queue_create(10);
 
@@ -61,23 +86,22 @@ TEST(WorkQueue, add_and_remove_by_many_elements)
   {
     for (size_t i = 0; i < 3; i++)
     {
-      work_queue_add(queue, &work);
+      work_queue_add(queue, DummyWork(tries * 10 + i));
     }
 
     for (size_t i = 0; i < 3; i++)
     {
       work_queue_remove(queue, &temp);
-      EXPECT_EQ(work, temp);
+      EXPECT_EQ(*DummyWork(tries * 10 + i), temp);
     }
   }
 
   work_queue_destroy(queue);
 }
 
-TEST(WorkQueue, add_and_remove_by_max_possible_elements)
+TEST_F(WorkQueue, add_and_remove_by_max_possible_elements)
 {
   work_t temp;
-  const work_t work = DUMMY_WORK;
 
   work_queue_t * queue = work_queue_create(10);
 
@@ -85,55 +109,54 @@ TEST(WorkQueue, add_and_remove_by_max_possible_elements)
   {
     for (size_t i = 0; i < 10; i++)
     {
-      work_queue_add(queue, &work);
+      work_queue_add(queue, DummyWork(tries * 10 + i));
     }
 
     for (size_t i = 0; i < 10; i++)
     {
       work_queue_remove(queue, &temp);
-      EXPECT_EQ(work, temp);
+      EXPECT_EQ(*DummyWork(tries * 10 + i), temp);
     }
   }
 
   work_queue_destroy(queue);
 }
 
-TEST(WorkQueue, removing_not_all_preserves_fifo)
+TEST_F(WorkQueue, removing_not_all_preserves_fifo)
 {
   const size_t INITIALLY_ELEMS_NO = 7;
 
+  size_t head = 0, tail = 0;
+
   work_t temp;
 
   work_queue_t * queue = work_queue_create(10);
 
-  // "not all" condition
   for (size_t i = 0; i < INITIALLY_ELEMS_NO; i++)
   {
-    work_queue_add(queue, &dummy_work);
+    work_queue_add(queue, DummyWork(head++));
   }
 
-  // checking fifo
   for (size_t i = 0; i < 3; i++)
   {
-    work_queue_add(queue, &dummy_work);
-    work_queue_add(queue, &dummy_work);
-    work_queue_add(queue, &dummy_work);
+    work_queue_add(queue, DummyWork(head++));
+    work_queue_add(queue, DummyWork(head++));
+    work_queue_add(queue, DummyWork(head++));
 
     work_queue_remove(queue, &temp);
-    EXPECT_EQ(dummy_work, temp);
+    EXPECT_EQ(*DummyWork(tail++), temp);
 
     work_queue_remove(queue, &temp);
-    EXPECT_EQ(dummy_work, temp);
+    EXPECT_EQ(*DummyWork(tail++), temp);
 
     work_queue_remove(queue, &temp);
-    EXPECT_EQ(dummy_work, temp);
+    EXPECT_EQ(*DummyWork(tail++), temp);
   }
 
-  // check initials in the end
   for (size_t i = 0; i < INITIALLY_ELEMS_NO; i++)
   {
     work_queue_remove(queue, &temp);
-    EXPECT_EQ(dummy_work, temp);
+    EXPECT_EQ(*DummyWork(tail++), temp);
   }
 
   work_queue_destroy(queue);
