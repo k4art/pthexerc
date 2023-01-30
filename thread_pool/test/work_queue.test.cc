@@ -162,3 +162,37 @@ TEST_F(WorkQueue, removing_not_all_preserves_fifo)
   work_queue_destroy(queue);
 }
 
+TEST_F(WorkQueue, stops_accepting_new_works)
+{
+  work_queue_t * queue = work_queue_create(128);
+
+  work_queue_stop_accepting(queue);
+
+  EXPECT_EQ(work_queue_add(queue, DummyWork(0)), ERROR_OUT_OF_SERVICE);
+  EXPECT_EQ(work_queue_add(queue, DummyWork(0)), ERROR_OUT_OF_SERVICE);
+
+  work_queue_destroy(queue);
+}
+
+TEST_F(WorkQueue, returns_works_before_stop_accepting)
+{
+  work_t temp;
+  work_queue_t * queue = work_queue_create(128);
+
+  work_queue_add(queue, DummyWork(0));
+  work_queue_add(queue, DummyWork(1));
+
+  work_queue_stop_accepting(queue);
+
+  EXPECT_EQ(work_queue_add(queue, DummyWork(2)), ERROR_OUT_OF_SERVICE);
+  EXPECT_EQ(work_queue_add(queue, DummyWork(3)), ERROR_OUT_OF_SERVICE);
+
+  work_queue_remove(queue, &temp);
+  EXPECT_EQ(temp, *DummyWork(0));
+
+  work_queue_remove(queue, &temp);
+  EXPECT_EQ(temp, *DummyWork(1));
+
+  work_queue_destroy(queue);
+}
+
