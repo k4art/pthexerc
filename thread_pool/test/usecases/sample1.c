@@ -39,7 +39,8 @@ int main(void)
     tpool_add_work(tpool, work_routine, values + i);
   }
 
-  tpool_wait(tpool);
+  tpool_shutdown(tpool);
+  tpool_join(tpool);
 
   bool failed = false;
   for (size_t i = 0; i < WORK_ITEMS_NUMBER; i++)

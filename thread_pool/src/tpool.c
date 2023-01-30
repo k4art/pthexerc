@@ -26,15 +26,17 @@ static void * thread_routine(void * arg)
   work_queue_t * work_queue = arg;
 
   work_t work;
-  err_t  err = SUCCESS;
+  err_t  err;
 
-  while (err != ERROR_OUT_OF_SERVICE)
+  while ((err = work_queue_remove(work_queue, &work)) != ERROR_OUT_OF_SERVICE)
   {
-    work_queue_wait_while_no_work(work_queue);
-
-    while ((err = work_queue_remove(work_queue, &work)) == SUCCESS)
+    if (err == SUCCESS)
     {
       work.routine(work.arg);
+    }
+    else
+    {
+      work_queue_wait_while_no_work(work_queue);
     }
   }
 
@@ -70,18 +72,6 @@ void tpool_destroy(tpool_t * tpool)
   free(tpool);
 }
 
-void tpool_wait(tpool_t * tpool)
-{
-  work_queue_stop_accepting(tpool->work_queue);
-  
-  for (size_t i = 0; i < tpool->threads_number; i++)
-  {
-    int ret = pthread_join(tpool->threads[i], NULL);
-
-    CHECK_ERROR(ret, "Joining the threads in a pool.");
-  }
-}
-
 void tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
 {
   work_t work =
@@ -91,5 +81,26 @@ void tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
   };
 
    work_queue_add(tpool->work_queue, &work);
+}
+
+void tpool_shutdown(tpool_t * tpool)
+{
+  work_queue_stop_accepting(tpool->work_queue);
+}
+
+void tpool_join(tpool_t * tpool)
+{
+  for (size_t i = 0; i < tpool->threads_number; i++)
+  {
+    int ret = pthread_join(tpool->threads[i], NULL);
+
+    CHECK_ERROR(ret, "Joining the threads in a pool.");
+  }
+}
+
+void tpool_join_then_destroy(tpool_t * tpool)
+{
+  tpool_join(tpool);
+  tpool_destroy(tpool);
 }
 

@@ -9,7 +9,11 @@ tpool_t * tpool_create(size_t threads_number);
 void tpool_destroy(tpool_t * tpool);
 
 void tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg);
-void tpool_wait(tpool_t * tpool);
+
+void tpool_shutdown(tpool_t * tpool);
+
+void tpool_join(tpool_t * tpool);
+void tpool_join_then_destroy(tpool_t * tpool);
 
 #endif
 
