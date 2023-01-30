@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "errors.h"
+#include "internals/malloc_c.h"
 
 #include "work_queue.h"
 
@@ -102,9 +103,7 @@ work_queue_t * work_queue_create(size_t capacity)
   assert(capacity > 0);
   
   size_t   size   = sizeof(work_queue_t) + sizeof(work_t) * capacity;
-  void   * memory = malloc(size);
-
-  assert(memory != NULL);
+  void   * memory = malloc_c(size);
 
   work_queue_t * work_queue = memory;
 

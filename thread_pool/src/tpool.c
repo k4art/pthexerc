@@ -5,6 +5,8 @@
 #include <assert.h>
 
 #include "errors.h"
+#include "internals/malloc_c.h"
+
 #include "work_queue.h"
 
 #include "tpool.h"
@@ -42,7 +44,7 @@ static void * thread_routine(void * arg)
 tpool_t * tpool_create(size_t threads_number)
 {
   size_t size = sizeof(tpool_t) + sizeof(pthread_t) * threads_number;
-  void * memory = malloc(size);
+  void * memory = malloc_c(size);
 
   tpool_t   * tpool   = memory;
   pthread_t * threads = memory + sizeof(tpool_t);
