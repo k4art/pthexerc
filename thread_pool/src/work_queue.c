@@ -164,7 +164,7 @@ void work_queue_wait_while_no_work(work_queue_t * work_queue)
 
   CHECKED(pthread_mutex_lock(&work_queue->mutex));
 
-  while (is_empty(work_queue) || !work_queue->stopped_accepting)
+  while (is_empty(work_queue) && !work_queue->stopped_accepting)
   {
     pthread_cond_wait(&work_queue->no_work_cv, &work_queue->mutex);
   }
