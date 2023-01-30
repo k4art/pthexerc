@@ -16,11 +16,10 @@ typedef struct work_s
 
 typedef struct work_queue_s work_queue_t;
 
-work_queue_t * work_queue_create(size_t capacity);
+work_queue_t * work_queue_create();
 
 void work_queue_destroy(work_queue_t * work_queue);
 
-bool work_queue_is_full(work_queue_t * work_queue);
 bool work_queue_is_empty(work_queue_t * work_queue);
 
 err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work);

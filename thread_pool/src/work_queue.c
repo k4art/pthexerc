@@ -7,18 +7,24 @@
 
 #include "work_queue.h"
 
+typedef struct queue_node_s queue_node_t;
+
+struct queue_node_s
+{
+  work_t         work;
+  queue_node_t * next;
+  queue_node_t * prev;
+};
+
 struct work_queue_s
 {
-  size_t  capacity;
-  size_t  head;
-  size_t  tail;
+  queue_node_t    * head;
+  queue_node_t    * tail;
 
   pthread_mutex_t mutex;
   pthread_cond_t  no_work_cv;
 
   bool stopped_accepting;
-
-  work_t circular_buffer[];
 };
 
 static size_t inc_mod(size_t n, size_t mod)
@@ -28,16 +34,29 @@ static size_t inc_mod(size_t n, size_t mod)
   return (n + 1) % mod;
 }
 
-static bool is_empty(work_queue_t * work_queue)
+static void * malloc_c(size_t size)
 {
-  /* Head is the index of the first, unless queue is empty. */
-  /* In which case, head is set to the capacity value. */
-  return work_queue->head == work_queue->capacity;
+  void * memory = malloc(size);
+
+  if (memory == NULL)
+  {
+    fprintf(stderr, "malloc() returned NULL.\n");
+    fprintf(stderr, "exiting...");
+
+    exit(EXIT_FAILURE);
+  }
+
+  return memory;
 }
 
-static bool is_full(work_queue_t * work_queue)
+static bool is_empty(work_queue_t * work_queue)
 {
-  return work_queue->tail == work_queue->head;
+  bool has_no_elements = work_queue->head == NULL;
+
+  /* head == NULL iff tail == NULL */
+  assert((work_queue->head == NULL) == (work_queue->tail == NULL));
+
+  return has_no_elements;
 }
 
 static err_t add_to_queue(work_queue_t * work_queue, const work_t * p_work)
@@ -47,22 +66,23 @@ static err_t add_to_queue(work_queue_t * work_queue, const work_t * p_work)
     return ERROR_OUT_OF_SERVICE;
   }
 
-  if (is_full(work_queue))
+  queue_node_t * queue_node = malloc_c(sizeof(queue_node_t));
+
+  queue_node->work = *p_work;
+  queue_node->prev = work_queue->tail;
+  queue_node->next = NULL;
+
+  if (work_queue->tail != NULL)
   {
-    return ERROR_OVERFLOW;
+    work_queue->tail->next = queue_node;
   }
 
-  size_t idx = work_queue->tail;
-
-  memcpy(&work_queue->circular_buffer[idx], p_work, sizeof(*p_work));
-
-  if (is_empty(work_queue)) /* adding first element */
+  if (work_queue->head == NULL) /* if it happens to be the first element as well */
   {
-    work_queue->head = idx;
-    pthread_cond_broadcast(&work_queue->no_work_cv);
+    work_queue->head = queue_node;
   }
 
-  work_queue->tail = inc_mod(idx, work_queue->capacity);
+  work_queue->tail = queue_node;
   
   return SUCCESS;
 }
@@ -81,51 +101,57 @@ static err_t remove_from_queue(work_queue_t * work_queue, work_t * p_work)
     }
   }
 
-  size_t idx = work_queue->head;
-  
-  memcpy(p_work, &work_queue->circular_buffer[idx], sizeof(*p_work));
+  queue_node_t * pre_tail = work_queue->tail->prev;
 
-  work_queue->head = inc_mod(idx, work_queue->capacity);
+  memcpy(p_work, &work_queue->tail->work, sizeof(*p_work));
 
-  if (is_full(work_queue)) /* underflow */
+  free(work_queue->tail);
+
+  if (pre_tail != NULL)
   {
-    work_queue->head = work_queue->capacity;
-
-    assert(is_empty(work_queue));
+    pre_tail->next = NULL;
+    work_queue->tail = pre_tail;
+  }
+  else
+  {
+    work_queue->tail = NULL;
+    work_queue->head = NULL;
   }
 
   return SUCCESS;
 }
 
-work_queue_t * work_queue_create(size_t capacity)
+work_queue_t * work_queue_create(void)
 {
-  assert(capacity > 0);
   
-  size_t   size   = sizeof(work_queue_t) + sizeof(work_t) * capacity;
-  void   * memory = malloc(size);
+  work_queue_t * queue = malloc_c(sizeof(work_queue_t));
 
-  assert(memory != NULL);
+  queue->head = NULL;
+  queue->tail = NULL;
 
-  work_queue_t * work_queue = memory;
+  CHECKED(pthread_mutex_init(&queue->mutex, NULL));
+  CHECKED(pthread_cond_init(&queue->no_work_cv, NULL));
 
-  work_queue->capacity = capacity;
+  queue->stopped_accepting = false;
 
-  work_queue->head = capacity; /* empty condition */
-  work_queue->tail = 0;
-
-  CHECKED(pthread_mutex_init(&work_queue->mutex, NULL));
-  CHECKED(pthread_cond_init(&work_queue->no_work_cv, NULL));
-
-  work_queue->stopped_accepting = false;
-
-  assert(is_empty(work_queue));
+  assert(is_empty(queue));
   
-  return work_queue;
+  return queue;
 }
 
 void work_queue_destroy(work_queue_t * work_queue)
 {
   assert(work_queue != NULL);
+
+  queue_node_t * node = work_queue->head;
+  queue_node_t * next = NULL;
+
+  while (node != NULL)
+  {
+    next = node->next;
+    free(node);
+    node = next;
+  }
   
   CHECKED(pthread_mutex_destroy(&work_queue->mutex));
   CHECKED(pthread_cond_destroy(&work_queue->no_work_cv));
@@ -141,19 +167,6 @@ bool work_queue_is_empty(work_queue_t * work_queue)
 
   CHECKED(pthread_mutex_lock(&work_queue->mutex));
   result = is_empty(work_queue);
-  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
-
-  return result;
-}
-
-bool work_queue_is_full(work_queue_t * work_queue)
-{
-  assert(work_queue != NULL);
-
-  bool result;
-
-  CHECKED(pthread_mutex_lock(&work_queue->mutex));
-  result = is_full(work_queue);
   CHECKED(pthread_mutex_unlock(&work_queue->mutex));
 
   return result;

@@ -9,8 +9,6 @@
 
 #include "tpool.h"
 
-static const size_t MAX_WORKS_WAITING = 1024;
-
 struct tpool_s
 {
   size_t         threads_number;
@@ -49,7 +47,7 @@ tpool_t * tpool_create(size_t threads_number)
 
   tpool->threads_number = threads_number;
 
-  tpool->work_queue = work_queue_create(MAX_WORKS_WAITING);
+  tpool->work_queue = work_queue_create();
 
   for (size_t i = 0; i < threads_number; i++)
   {

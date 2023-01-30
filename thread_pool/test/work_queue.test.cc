@@ -26,7 +26,7 @@ static const work_t dummy_work = DUMMY_WORK;
 
 TEST(WorkQueue, creates_empty_queue)
 {
-  work_queue_t * queue = work_queue_create(3);
+  work_queue_t * queue = work_queue_create();
   
   EXPECT_TRUE(work_queue_is_empty(queue));
 
@@ -37,7 +37,7 @@ TEST(WorkQueue, add_and_remove_by_single_element)
 {
   work_t temp;
 
-  work_queue_t * queue = work_queue_create(3);
+  work_queue_t * queue = work_queue_create();
 
   for (size_t i = 0; i < 7; i++)
   {
@@ -55,7 +55,7 @@ TEST(WorkQueue, add_and_remove_by_many_elements)
   work_t temp;
   const work_t work = DUMMY_WORK;
 
-  work_queue_t * queue = work_queue_create(10);
+  work_queue_t * queue = work_queue_create();
 
   for (size_t tries = 0; tries < 5; tries++)
   {
@@ -65,30 +65,6 @@ TEST(WorkQueue, add_and_remove_by_many_elements)
     }
 
     for (size_t i = 0; i < 3; i++)
-    {
-      work_queue_remove(queue, &temp);
-      EXPECT_EQ(work, temp);
-    }
-  }
-
-  work_queue_destroy(queue);
-}
-
-TEST(WorkQueue, add_and_remove_by_max_possible_elements)
-{
-  work_t temp;
-  const work_t work = DUMMY_WORK;
-
-  work_queue_t * queue = work_queue_create(10);
-
-  for (size_t tries = 0; tries < 5; tries++)
-  {
-    for (size_t i = 0; i < 10; i++)
-    {
-      work_queue_add(queue, &work);
-    }
-
-    for (size_t i = 0; i < 10; i++)
     {
       work_queue_remove(queue, &temp);
       EXPECT_EQ(work, temp);
@@ -104,7 +80,7 @@ TEST(WorkQueue, removing_not_all_preserves_fifo)
 
   work_t temp;
 
-  work_queue_t * queue = work_queue_create(10);
+  work_queue_t * queue = work_queue_create();
 
   // "not all" condition
   for (size_t i = 0; i < INITIALLY_ELEMS_NO; i++)
