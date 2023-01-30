@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdalign.h>
 
 #include "errors.h"
 #include "internals/malloc_c.h"
@@ -38,9 +39,18 @@ static void * thread_routine(void * arg)
   return NULL;
 }
 
+static size_t padded_with_alignment(size_t size)
+{
+  size_t align = alignof(max_align_t);
+
+  assert((align & (align - 1)) == 0);   /* align is power of 2 */
+
+  return (size + (align - 1)) & -align; /* smallest larger multiple of `align` */
+}
+
 tpool_t * tpool_create(size_t threads_number)
 {
-  size_t size = sizeof(tpool_t) + sizeof(pthread_t) * threads_number;
+  size_t size   = padded_with_alignment(sizeof(tpool_t)) + sizeof(pthread_t) * threads_number;
   void * memory = malloc_c(size);
 
   tpool_t   * tpool   = memory;
