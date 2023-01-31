@@ -30,7 +30,7 @@ static const size_t WORK_ITEMS_NUMBER = 1000;
 
 static const int VALUE_INCREMENT = 1000;
 
-static bool announce_works_done(int * values)
+static bool check_works_are_done(int * values)
 {
   bool success = true;
 
@@ -54,7 +54,7 @@ static void work_routine(void * arg)
   *value += VALUE_INCREMENT;
 
   // Not all logs might appear in stdout due to lack of synchronization
-  // Absence of this log should signal of lack of works in the queue or deadlock
+  // Absence of this log should signal lack of works in the queue or deadlock
   printf("tid=%lu, old=%d, val=%d\n", pthread_self(), old, *value);
 
   if (*value % 2 != 0)
@@ -67,9 +67,10 @@ static sigset_t signal_set;
 
 static void * signal_waiter(void * context)
 {
-  /* This is the routine of the thread that solely handle SIGINT */
+  /* This is the routine of the thread that solely handles SIGINT */
 
   int sig_number = 0;
+  tpool_t * tpool = (tpool_t *) context;
 
   while (true)
   {
@@ -77,18 +78,14 @@ static void * signal_waiter(void * context)
 
     if (sig_number == SIGINT)
     {
-      tpool_t * tpool = (tpool_t *) context;
-
       tpool_shutdown(tpool);
-
       return NULL;
     }
   }
 }
 
 /**
- * Should be called before creating new threads
- * to make them inherit sigmask/
+ * Should be called before creating new threads to make them inherit sigmask.
  */
 static void prepare_signal_set(void)
 {
@@ -121,7 +118,7 @@ int main(void)
   /* Main thread is blocked untill all works are done */
   /* and the thread pool is shutdown. */
 
-  bool success = announce_works_done(values);
+  bool success = check_works_are_done(values);
 
   if (success)
   {
