@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 
+#include <thread>
+
 extern "C"
 {
   #include "work_queue.h"
@@ -135,6 +137,37 @@ TEST_F(WorkQueue, removing_not_all_preserves_fifo)
     work_queue_remove(queue, &temp);
     EXPECT_EQ(*DummyWork(tail++), temp);
   }
+
+  work_queue_destroy(queue);
+}
+
+TEST_F(WorkQueue, broadcasts_after_adding_to_empty)
+{
+  work_queue_t * queue = work_queue_create();
+
+  bool success_flag = false;
+
+  work_queue_add(queue, DummyWork(0));
+
+  std::thread thread_remover([&]() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    work_t temp;
+    work_queue_remove(queue, &temp);
+  });
+
+  std::thread thread_waiter([&]() {
+    work_queue_stop_accepting(queue);
+
+    success_flag = true;
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(15));
+
+  EXPECT_TRUE(success_flag);
+
+  thread_remover.detach();
+  thread_waiter.detach();
 
   work_queue_destroy(queue);
 }
