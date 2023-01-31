@@ -29,6 +29,8 @@ struct work_queue_s
 
 static bool is_empty(work_queue_t * work_queue)
 {
+  assert(work_queue != NULL);
+  
   bool head_is_null = work_queue->head == NULL;
 
   /* (head == NULL) if and only if (tail == NULL) */
@@ -39,6 +41,9 @@ static bool is_empty(work_queue_t * work_queue)
 
 static err_t add_to_queue(work_queue_t * work_queue, const work_t * p_work)
 {
+  assert(work_queue != NULL);
+  assert(p_work != NULL);
+
   if (work_queue->stopped_accepting)
   {
     return ERROR_OUT_OF_SERVICE;
@@ -66,6 +71,9 @@ static err_t add_to_queue(work_queue_t * work_queue, const work_t * p_work)
 
 static err_t remove_from_queue(work_queue_t * work_queue, work_t * p_work)
 {
+  assert(work_queue != NULL);
+  assert(p_work != NULL);
+  
   if (is_empty(work_queue))
   {
     if (work_queue->stopped_accepting)
@@ -155,6 +163,7 @@ void work_queue_wait_while_no_work(work_queue_t * work_queue)
 err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 {
   assert(work_queue != NULL);
+  assert(p_work != NULL);
 
   err_t ret_err;
   
@@ -168,6 +177,7 @@ err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
 {
   assert(work_queue != NULL);
+  assert(p_work != NULL);
 
   err_t ret_err;
 
