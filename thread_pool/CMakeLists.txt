@@ -12,7 +12,7 @@ enable_testing()
 add_subdirectory(test)
 add_subdirectory(lib/googletest)
 
-set(LIB_NAME ${CMAKE_PROJECT_NAME}_lib)
+set(LIB_NAME ${PROJECT_NAME}_lib)
 
 file(GLOB_RECURSE SOURCES LIST_DIRECTORIES true include/*.h src/*.c)
 
