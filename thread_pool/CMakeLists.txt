@@ -9,6 +9,8 @@ include_directories(include)
 
 enable_testing()
 
+add_subdirectory(../fifo fifo)
+
 add_subdirectory(test)
 add_subdirectory(lib/googletest)
 
@@ -17,4 +19,6 @@ set(LIB_NAME ${PROJECT_NAME}_lib)
 file(GLOB_RECURSE SOURCES LIST_DIRECTORIES true include/*.h src/*.c)
 
 add_library(${LIB_NAME} STATIC ${SOURCES})
+
+target_link_libraries(${LIB_NAME} PUBLIC fifo_lib)
 
