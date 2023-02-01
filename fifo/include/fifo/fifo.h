@@ -13,7 +13,7 @@ typedef enum fifo_ret_e
 } fifo_ret_t;
 
 #define FIFO_CREATE_FOR(p_fifo, type) \
-  fifo_create_for_object_size((p_fifo), sizeof((type)))
+  fifo_create_for_object_size((p_fifo), sizeof(type))
 
 fifo_ret_t fifo_create_for_object_size(fifo_t ** p_fifo, size_t object_size);
 
