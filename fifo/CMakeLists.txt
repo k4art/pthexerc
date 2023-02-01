@@ -7,10 +7,13 @@ set(CMKAE_CXX_STANDARD 14)
 
 include_directories(include)
 
-enable_testing()
+# if it is the main project
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  enable_testing()
 
-add_subdirectory(test)
-add_subdirectory(lib/googletest)
+  add_subdirectory(test)
+  add_subdirectory(lib/googletest)
+endif()
 
 set(LIB_NAME ${PROJECT_NAME}_lib)
 
