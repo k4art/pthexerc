@@ -69,8 +69,8 @@ TEST_F(WorkQueue, add_and_remove_by_single_element)
 
   for (size_t i = 0; i < 7; i++)
   {
-    work_queue_add(queue, DummyWork(i));
-    work_queue_remove(queue, &temp);
+    EXPECT_EQ(work_queue_add(queue, DummyWork(i)), SUCCESS);
+    EXPECT_EQ(work_queue_remove(queue, &temp), SUCCESS);
 
     EXPECT_EQ(*DummyWork(i), temp);
   }
@@ -88,12 +88,12 @@ TEST_F(WorkQueue, add_and_remove_by_many_elements)
   {
     for (size_t i = 0; i < 3; i++)
     {
-      work_queue_add(queue, DummyWork(tries * 10 + i));
+      EXPECT_EQ(work_queue_add(queue, DummyWork(tries * 10 + i)), SUCCESS);
     }
 
     for (size_t i = 0; i < 3; i++)
     {
-      work_queue_remove(queue, &temp);
+      EXPECT_EQ(work_queue_remove(queue, &temp), SUCCESS);
       EXPECT_EQ(*DummyWork(tries * 10 + i), temp);
     }
   }
@@ -113,28 +113,28 @@ TEST_F(WorkQueue, removing_not_all_preserves_fifo)
 
   for (size_t i = 0; i < INITIALLY_ELEMS_NO; i++)
   {
-    work_queue_add(queue, DummyWork(head++));
+    ASSERT_EQ(work_queue_add(queue, DummyWork(head++)), SUCCESS);
   }
 
   for (size_t i = 0; i < 3; i++)
   {
-    work_queue_add(queue, DummyWork(head++));
-    work_queue_add(queue, DummyWork(head++));
-    work_queue_add(queue, DummyWork(head++));
+    EXPECT_EQ(work_queue_add(queue, DummyWork(head++)), SUCCESS);
+    EXPECT_EQ(work_queue_add(queue, DummyWork(head++)), SUCCESS);
+    EXPECT_EQ(work_queue_add(queue, DummyWork(head++)), SUCCESS);
 
-    work_queue_remove(queue, &temp);
+    EXPECT_EQ(work_queue_remove(queue, &temp), SUCCESS);
     EXPECT_EQ(*DummyWork(tail++), temp);
 
-    work_queue_remove(queue, &temp);
+    EXPECT_EQ(work_queue_remove(queue, &temp), SUCCESS);
     EXPECT_EQ(*DummyWork(tail++), temp);
 
-    work_queue_remove(queue, &temp);
+    EXPECT_EQ(work_queue_remove(queue, &temp), SUCCESS);
     EXPECT_EQ(*DummyWork(tail++), temp);
   }
 
   for (size_t i = 0; i < INITIALLY_ELEMS_NO; i++)
   {
-    work_queue_remove(queue, &temp);
+    EXPECT_EQ(work_queue_remove(queue, &temp), SUCCESS);
     EXPECT_EQ(*DummyWork(tail++), temp);
   }
 
@@ -147,7 +147,7 @@ TEST_F(WorkQueue, broadcasts_after_adding_to_empty)
 
   bool success_flag = false;
 
-  work_queue_add(queue, DummyWork(0));
+  ASSERT_EQ(work_queue_add(queue, DummyWork(0)), SUCCESS);
 
   std::thread thread_remover([&]() {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -189,18 +189,18 @@ TEST_F(WorkQueue, returns_works_before_stop_accepting)
   work_t temp;
   work_queue_t * queue = work_queue_create();
 
-  work_queue_add(queue, DummyWork(0));
-  work_queue_add(queue, DummyWork(1));
+  ASSERT_EQ(work_queue_add(queue, DummyWork(0)), SUCCESS);
+  ASSERT_EQ(work_queue_add(queue, DummyWork(1)), SUCCESS);
 
   work_queue_stop_accepting(queue);
 
   EXPECT_EQ(work_queue_add(queue, DummyWork(2)), ERROR_OUT_OF_SERVICE);
   EXPECT_EQ(work_queue_add(queue, DummyWork(3)), ERROR_OUT_OF_SERVICE);
 
-  work_queue_remove(queue, &temp);
+  EXPECT_EQ(work_queue_remove(queue, &temp), SUCCESS);
   EXPECT_EQ(temp, *DummyWork(0));
 
-  work_queue_remove(queue, &temp);
+  EXPECT_EQ(work_queue_remove(queue, &temp), SUCCESS);
   EXPECT_EQ(temp, *DummyWork(1));
 
   work_queue_destroy(queue);
