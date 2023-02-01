@@ -8,10 +8,9 @@ typedef struct fifo_s fifo_t;
 
 typedef enum fifo_ret_e
 {
-    FIFO_SUCCESS = 0,
-    FIFO_EAGAIN,
-  } fifo_ret_t;
-
+  FIFO_SUCCESS = 0,
+  FIFO_EAGAIN,
+} fifo_ret_t;
 
 #define FIFO_CREATE_FOR(p_fifo, type) \
   fifo_create_for_object_size((p_fifo), sizeof((type)))
