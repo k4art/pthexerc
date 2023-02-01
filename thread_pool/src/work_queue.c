@@ -8,68 +8,72 @@
 
 #include "work_queue.h"
 
+typedef struct queue_node_s queue_node_t;
+
+struct queue_node_s
+{
+  queue_node_t * next;
+  work_t         work;
+};
+
 struct work_queue_s
 {
-  size_t  capacity;
-  size_t  head;
-  size_t  tail;
+  queue_node_t * head;
+  queue_node_t * tail;
 
   pthread_mutex_t mutex;
   pthread_cond_t  no_work_cv;
 
   bool stopped_accepting;
-
-  work_t circular_buffer[];
 };
-
-static size_t inc_mod(size_t n, size_t mod)
-{
-  assert(mod != 0);
-
-  return (n + 1) % mod;
-}
 
 static bool is_empty(work_queue_t * work_queue)
 {
-  /* Head is the index of the first, unless queue is empty. */
-  /* In which case, head is set to the capacity value. */
-  return work_queue->head == work_queue->capacity;
-}
+  assert(work_queue != NULL);
+  
+  bool head_is_null = work_queue->head == NULL;
 
-static bool is_full(work_queue_t * work_queue)
-{
-  return work_queue->tail == work_queue->head;
+  /* (head == NULL) if and only if (tail == NULL) */
+  assert(head_is_null == (work_queue->tail == NULL));
+
+  return head_is_null;
 }
 
 static err_t add_to_queue(work_queue_t * work_queue, const work_t * p_work)
 {
+  assert(work_queue != NULL);
+  assert(p_work != NULL);
+
   if (work_queue->stopped_accepting)
   {
     return ERROR_OUT_OF_SERVICE;
   }
 
-  if (is_full(work_queue))
-  {
-    return ERROR_OVERFLOW;
-  }
+  queue_node_t * node = malloc_c(sizeof(queue_node_t));
 
-  size_t idx = work_queue->tail;
-
-  memcpy(&work_queue->circular_buffer[idx], p_work, sizeof(*p_work));
+  node->next = NULL;
+  node->work = *p_work;
 
   if (is_empty(work_queue)) /* adding first element */
   {
-    work_queue->head = idx;
+    work_queue->head = work_queue->tail = node;
+
     pthread_cond_broadcast(&work_queue->no_work_cv);
   }
-
-  work_queue->tail = inc_mod(idx, work_queue->capacity);
+  else
+  {
+    work_queue->tail->next = node;
+    work_queue->tail       = node;
+  }
   
   return SUCCESS;
 }
 
 static err_t remove_from_queue(work_queue_t * work_queue, work_t * p_work)
 {
+  assert(work_queue != NULL);
+  assert(p_work != NULL);
+  
   if (is_empty(work_queue))
   {
     if (work_queue->stopped_accepting)
@@ -82,35 +86,32 @@ static err_t remove_from_queue(work_queue_t * work_queue, work_t * p_work)
     }
   }
 
-  size_t idx = work_queue->head;
-  
-  memcpy(p_work, &work_queue->circular_buffer[idx], sizeof(*p_work));
+  queue_node_t * front = work_queue->head;
 
-  work_queue->head = inc_mod(idx, work_queue->capacity);
+  *p_work = front->work;
 
-  if (is_full(work_queue)) /* underflow */
+  if (work_queue->head == work_queue->tail) /* removed the last element */
   {
-    work_queue->head = work_queue->capacity;
-
-    assert(is_empty(work_queue));
+    work_queue->head = work_queue->tail = NULL;
   }
+  else
+  {
+    work_queue->head = front->next;
+  }
+
+  free(front);
 
   return SUCCESS;
 }
 
-work_queue_t * work_queue_create(size_t capacity)
+work_queue_t * work_queue_create()
 {
-  assert(capacity > 0);
-  
-  size_t   size   = sizeof(work_queue_t) + sizeof(work_t) * capacity;
-  void   * memory = malloc_c(size);
+  void * memory = malloc_c(sizeof(work_queue_t));
 
   work_queue_t * work_queue = memory;
 
-  work_queue->capacity = capacity;
-
-  work_queue->head = capacity; /* empty condition */
-  work_queue->tail = 0;
+  work_queue->head = NULL;
+  work_queue->tail = NULL;
 
   CHECKED(pthread_mutex_init(&work_queue->mutex, NULL));
   CHECKED(pthread_cond_init(&work_queue->no_work_cv, NULL));
@@ -145,19 +146,6 @@ bool work_queue_is_empty(work_queue_t * work_queue)
   return result;
 }
 
-bool work_queue_is_full(work_queue_t * work_queue)
-{
-  assert(work_queue != NULL);
-
-  bool result;
-
-  CHECKED(pthread_mutex_lock(&work_queue->mutex));
-  result = is_full(work_queue);
-  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
-
-  return result;
-}
-
 void work_queue_wait_while_no_work(work_queue_t * work_queue)
 {
   assert(work_queue != NULL);
@@ -175,6 +163,7 @@ void work_queue_wait_while_no_work(work_queue_t * work_queue)
 err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 {
   assert(work_queue != NULL);
+  assert(p_work != NULL);
 
   err_t ret_err;
   
@@ -188,6 +177,7 @@ err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
 {
   assert(work_queue != NULL);
+  assert(p_work != NULL);
 
   err_t ret_err;
 

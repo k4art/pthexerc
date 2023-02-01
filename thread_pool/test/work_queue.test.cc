@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 
+#include <thread>
+
 extern "C"
 {
   #include "work_queue.h"
@@ -52,7 +54,7 @@ work_t WorkQueue::dummies_pool[DUMMIES_NUMBER];
 
 TEST_F(WorkQueue, creates_empty_queue)
 {
-  work_queue_t * queue = work_queue_create(3);
+  work_queue_t * queue = work_queue_create();
   
   EXPECT_TRUE(work_queue_is_empty(queue));
 
@@ -63,7 +65,7 @@ TEST_F(WorkQueue, add_and_remove_by_single_element)
 {
   work_t temp;
 
-  work_queue_t * queue = work_queue_create(3);
+  work_queue_t * queue = work_queue_create();
 
   for (size_t i = 0; i < 7; i++)
   {
@@ -80,7 +82,7 @@ TEST_F(WorkQueue, add_and_remove_by_many_elements)
 {
   work_t temp;
 
-  work_queue_t * queue = work_queue_create(10);
+  work_queue_t * queue = work_queue_create();
 
   for (size_t tries = 0; tries < 5; tries++)
   {
@@ -90,29 +92,6 @@ TEST_F(WorkQueue, add_and_remove_by_many_elements)
     }
 
     for (size_t i = 0; i < 3; i++)
-    {
-      work_queue_remove(queue, &temp);
-      EXPECT_EQ(*DummyWork(tries * 10 + i), temp);
-    }
-  }
-
-  work_queue_destroy(queue);
-}
-
-TEST_F(WorkQueue, add_and_remove_by_max_possible_elements)
-{
-  work_t temp;
-
-  work_queue_t * queue = work_queue_create(10);
-
-  for (size_t tries = 0; tries < 5; tries++)
-  {
-    for (size_t i = 0; i < 10; i++)
-    {
-      work_queue_add(queue, DummyWork(tries * 10 + i));
-    }
-
-    for (size_t i = 0; i < 10; i++)
     {
       work_queue_remove(queue, &temp);
       EXPECT_EQ(*DummyWork(tries * 10 + i), temp);
@@ -130,7 +109,7 @@ TEST_F(WorkQueue, removing_not_all_preserves_fifo)
 
   work_t temp;
 
-  work_queue_t * queue = work_queue_create(10);
+  work_queue_t * queue = work_queue_create();
 
   for (size_t i = 0; i < INITIALLY_ELEMS_NO; i++)
   {
@@ -162,9 +141,40 @@ TEST_F(WorkQueue, removing_not_all_preserves_fifo)
   work_queue_destroy(queue);
 }
 
+TEST_F(WorkQueue, broadcasts_after_adding_to_empty)
+{
+  work_queue_t * queue = work_queue_create();
+
+  bool success_flag = false;
+
+  work_queue_add(queue, DummyWork(0));
+
+  std::thread thread_remover([&]() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    work_t temp;
+    work_queue_remove(queue, &temp);
+  });
+
+  std::thread thread_waiter([&]() {
+    work_queue_stop_accepting(queue);
+
+    success_flag = true;
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(15));
+
+  EXPECT_TRUE(success_flag);
+
+  thread_remover.detach();
+  thread_waiter.detach();
+
+  work_queue_destroy(queue);
+}
+
 TEST_F(WorkQueue, stops_accepting_new_works)
 {
-  work_queue_t * queue = work_queue_create(128);
+  work_queue_t * queue = work_queue_create();
 
   work_queue_stop_accepting(queue);
 
@@ -177,7 +187,7 @@ TEST_F(WorkQueue, stops_accepting_new_works)
 TEST_F(WorkQueue, returns_works_before_stop_accepting)
 {
   work_t temp;
-  work_queue_t * queue = work_queue_create(128);
+  work_queue_t * queue = work_queue_create();
 
   work_queue_add(queue, DummyWork(0));
   work_queue_add(queue, DummyWork(1));
