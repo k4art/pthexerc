@@ -37,6 +37,10 @@ TEST(FIFO, creates_empty)
 
 TEST(FIFO_Debug, asserts_on_dequeueing_from_empty)
 {
+#ifdef NDEBUG
+  GTEST_SKIP();
+#endif
+  
   fifo_t * fifo = NULL;
 
   uint32_t result;
@@ -47,7 +51,7 @@ TEST(FIFO_Debug, asserts_on_dequeueing_from_empty)
 
   ASSERT_TRUE(fifo_is_empty(fifo));
 
-  EXPECT_DEBUG_DEATH(fifo_dequeue(fifo, &result), "");
+  EXPECT_EXIT(fifo_dequeue(fifo, &result), testing::KilledBySignal(SIGABRT), "Assertion");
 
   ASSERT_EQ(fifo_destroy(fifo), FIFO_SUCCESS);
 }
