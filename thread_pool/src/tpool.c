@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "errors.h"
 #include "internals/malloc_c.h"
@@ -18,6 +19,11 @@ struct tpool_s
 
   pthread_t      threads[];
 };
+
+#define MALLOC_OR_RETURN(size, ret) ({ \
+  void * mem = malloc((size));         \
+  if (mem == NULL) return ret;         \
+  mem; }) 
 
 static void * thread_routine(void * arg)
 {
@@ -41,28 +47,51 @@ static void * thread_routine(void * arg)
   return NULL;
 }
 
+static size_t try_to_create_threads(size_t n, pthread_t * threads, void * context)
+{
+  size_t created = 0;
+
+  for (; created < n; created++)
+  {
+    int ret = pthread_create(threads + created, NULL, thread_routine, context);
+
+    assert(ret == 0 || ret == EAGAIN);
+
+    if (ret != 0) break;
+  }
+
+  return created;
+}
+
 tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number)
 {
-  size_t size = sizeof(tpool_t) + sizeof(pthread_t) * threads_number;
-  void * memory = malloc_c(size);
+  size_t    size  = sizeof(tpool_t) + sizeof(pthread_t) * threads_number;
+  tpool_t * tpool = MALLOC_OR_RETURN(size, TPOOL_EMEMALLOC);
 
-  tpool_t   * tpool   = memory;
-  pthread_t * threads = memory + sizeof(tpool_t);
+  work_queue_t * queue   = work_queue_create();
+  size_t threads_created = try_to_create_threads(threads_number, tpool->threads, queue);
 
-  tpool->threads_number = threads_number;
+  tpool->threads_number = threads_created; // NOT threads_number, see rollback
+  tpool->work_queue     = queue;
 
-  tpool->work_queue = work_queue_create();
-
-  for (size_t i = 0; i < threads_number; i++)
-  {
-    int ret = pthread_create(&threads[i], NULL, thread_routine, tpool->work_queue);
-
-    CHECK_ERROR(ret, "Creating threads for tpool.");
-  }
+  if (threads_created != threads_number) goto rollback;
 
   *p_tpool = tpool;
 
   return TPOOL_SUCCESS;
+
+rollback:
+  if (threads_created > 0)
+  {
+    // Here tpool is a valid thread pool,
+    // but with less number of threads then requested.
+    tpool_shutdown(tpool);
+    tpool_join(tpool);
+  }
+
+  tpool_destroy(tpool);
+
+  return TPOOL_ESYSFAIL;
 }
 
 void tpool_destroy(tpool_t * tpool)
@@ -80,9 +109,13 @@ tpool_ret_t tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
     .arg     = arg,
   };
 
-  work_queue_add(tpool->work_queue, &work);
+  switch (work_queue_add(tpool->work_queue, &work))
+  {
+    case SUCCESS:              return TPOOL_SUCCESS;
+    case ERROR_OUT_OF_SERVICE: return TPOOL_EREQREJECTED;
 
-  return TPOOL_SUCCESS;
+    default: assert(false);
+  }
 }
 
 void tpool_shutdown(tpool_t * tpool)
