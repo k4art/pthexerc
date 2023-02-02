@@ -16,7 +16,7 @@ typedef struct work_s
 
 typedef struct work_queue_s work_queue_t;
 
-work_queue_t * work_queue_create();
+work_queue_t * work_queue_create(void);
 
 void work_queue_destroy(work_queue_t * work_queue);
 
