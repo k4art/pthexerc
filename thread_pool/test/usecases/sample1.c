@@ -101,8 +101,12 @@ int main(void)
 
   prepare_signal_set();
 
-  tpool_t * tpool  = tpool_create(THREADS_NUMBER);
-  int     * values = calloc(WORK_ITEMS_NUMBER, sizeof(*values));
+  tpool_t * tpool  = NULL;
+  int     * values = NULL;
+  
+  tpool_create(&tpool, THREADS_NUMBER);
+
+  values = calloc(WORK_ITEMS_NUMBER, sizeof(*values));
 
   /* Create thread that will shutdown thread pool on SIGINT */
   CHECKED(pthread_create(&signal_thread, NULL, signal_waiter, tpool));

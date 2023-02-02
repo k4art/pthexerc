@@ -43,7 +43,7 @@ static void * thread_routine(void * arg)
   return NULL;
 }
 
-tpool_t * tpool_create(size_t threads_number)
+tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number)
 {
   size_t size = sizeof(tpool_t) + sizeof(pthread_t) * threads_number;
   void * memory = malloc_c(size);
@@ -62,7 +62,9 @@ tpool_t * tpool_create(size_t threads_number)
     CHECK_ERROR(ret, "Creating threads for tpool.");
   }
 
-  return tpool;
+  *p_tpool = tpool;
+
+  return TPOOL_SUCCESS;
 }
 
 void tpool_destroy(tpool_t * tpool)
@@ -72,7 +74,7 @@ void tpool_destroy(tpool_t * tpool)
   free(tpool);
 }
 
-void tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
+tpool_ret_t tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
 {
   work_t work =
   {
@@ -80,7 +82,9 @@ void tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
     .arg     = arg,
   };
 
-   work_queue_add(tpool->work_queue, &work);
+  work_queue_add(tpool->work_queue, &work);
+
+  return TPOOL_SUCCESS;
 }
 
 void tpool_shutdown(tpool_t * tpool)

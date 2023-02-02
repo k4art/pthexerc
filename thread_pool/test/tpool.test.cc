@@ -8,7 +8,9 @@ extern "C"
 
 TEST(TPoolSingleThreaded, joins_when_no_works_given)
 {
-  tpool_t * tpool = tpool_create(1);
+  tpool_t * tpool = NULL;
+  
+  tpool_create(&tpool, 1);
 
   tpool_shutdown(tpool);
   tpool_join_then_destroy(tpool);
@@ -16,7 +18,8 @@ TEST(TPoolSingleThreaded, joins_when_no_works_given)
 
 TEST(TPoolSingleThreaded, executes_all_works_in_fifo)
 {
-  tpool_t * tpool = tpool_create(1);
+  tpool_t * tpool = NULL;
+  tpool_create(&tpool, 1);
 
   auto work_routine = [](void * context)
     {
@@ -41,7 +44,8 @@ TEST(TPoolSingleThreaded, executes_all_works_in_fifo)
 
 TEST(TPoolMultiThreaded, joins_when_no_works_given)
 {
-  tpool_t * tpool = tpool_create(8);
+  tpool_t * tpool = NULL;
+  tpool_create(&tpool, 8);
 
   tpool_shutdown(tpool);
   tpool_join_then_destroy(tpool);
@@ -52,7 +56,8 @@ TEST(TPoolMultiThreaded, executes_all_works_multiple_of_threads_number)
   const size_t TOTAL_WORKS_NO = 8;
   bool work_done_f[TOTAL_WORKS_NO];
   
-  tpool_t * tpool = tpool_create(8);
+  tpool_t * tpool = NULL;
+  tpool_create(&tpool, 8);
 
   auto work_routine = [](void * context)
     {
