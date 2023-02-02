@@ -86,7 +86,7 @@ fifo_ret_t fifo_enqueue(fifo_t * fifo, const void * p_object)
 
   fifo_node_t * node = NULL;
 
-  MALLOC_OR_RETURN_EAGAIN(node, fifo->object_size);
+  MALLOC_OR_RETURN_EAGAIN(node, fifo->object_size + sizeof(union { fifo_node_t a; max_align_t b; }));
 
   node->next = NULL;
 

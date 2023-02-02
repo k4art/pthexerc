@@ -10,7 +10,7 @@ TEST(FIFO, creates_and_destroies)
   fifo_t * fifo = NULL;
   fifo_ret_t ret;
   
-  ret = fifo_create_for_object_size(&fifo, sizeof(int));
+  ret = fifo_create_for_object_size(&fifo, sizeof(uint32_t));
   EXPECT_EQ(ret, FIFO_SUCCESS);
 
   EXPECT_NE(fifo, (void *) NULL);
@@ -26,7 +26,7 @@ TEST(FIFO, creates_empty)
 {
   fifo_t * fifo = NULL;
   
-  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(int)), FIFO_SUCCESS);
+  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(uint32_t)), FIFO_SUCCESS);
 
   ASSERT_NE(fifo, (void *) NULL);
 
@@ -37,17 +37,21 @@ TEST(FIFO, creates_empty)
 
 TEST(FIFO_Debug, asserts_on_dequeueing_from_empty)
 {
+#ifdef NDEBUG
+  GTEST_SKIP();
+#endif
+  
   fifo_t * fifo = NULL;
 
-  int result;
+  uint32_t result;
   
-  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(int)), FIFO_SUCCESS);
+  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(uint32_t)), FIFO_SUCCESS);
 
   ASSERT_NE(fifo, (void *) NULL);
 
   ASSERT_TRUE(fifo_is_empty(fifo));
 
-  EXPECT_DEBUG_DEATH(fifo_dequeue(fifo, &result), "");
+  EXPECT_EXIT(fifo_dequeue(fifo, &result), testing::KilledBySignal(SIGABRT), "Assertion");
 
   ASSERT_EQ(fifo_destroy(fifo), FIFO_SUCCESS);
 }
@@ -57,10 +61,10 @@ TEST(FIFO, dequeues_the_only_element_once)
   fifo_t * fifo = NULL;
   fifo_ret_t ret;
 
-  const int object = 42;
-  int returned = 0;
+  const uint32_t object = 42;
+  uint32_t returned = 0;
   
-  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(int)), FIFO_SUCCESS);
+  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(uint32_t)), FIFO_SUCCESS);
 
   ASSERT_NE(fifo, (void *) NULL);
 
@@ -80,14 +84,14 @@ TEST(FIFO, dequeues_the_only_element_repeated)
   fifo_t * fifo = NULL;
   fifo_ret_t ret;
 
-  const int object = 42;
-  int returned = 0;
+  const uint32_t object = 42;
+  uint32_t returned = 0;
   
-  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(int)), FIFO_SUCCESS);
+  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(uint32_t)), FIFO_SUCCESS);
 
   ASSERT_NE(fifo, (void *) NULL);
 
-  for (int i = 0; i < 10; i++)
+  for (uint32_t i = 0; i < 10; i++)
   {
     ret = fifo_enqueue(fifo, &object);
     EXPECT_EQ(ret, FIFO_SUCCESS);
@@ -106,19 +110,19 @@ TEST(FIFO, dequeue_bunch_of_numbers_in_same_order)
   fifo_t * fifo = NULL;
   fifo_ret_t ret;
 
-  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(int)), FIFO_SUCCESS);
+  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(uint32_t)), FIFO_SUCCESS);
 
   ASSERT_NE(fifo, (void *) NULL);
 
-  for (int object = 0; object < 5; object++)
+  for (uint32_t object = 0; object < 5; object++)
   {
     ret = fifo_enqueue(fifo, &object);
     EXPECT_EQ(ret, FIFO_SUCCESS);
   }
 
-  for (int object = 0; object < 5; object++)
+  for (uint32_t object = 0; object < 5; object++)
   {
-    int returned = -1;
+    uint32_t returned = -1;
     
     ret = fifo_dequeue(fifo, &returned);
     EXPECT_EQ(ret, FIFO_SUCCESS);
@@ -134,10 +138,10 @@ TEST(FIFO, preserves_fifo_after_dequeueing_not_all)
   fifo_t * fifo = NULL;
   fifo_ret_t ret;
 
-  int head = 0; // incremented on enqueue
-  int tail = 0; // incremented on dequeue
+  uint32_t head = 0; // incremented on enqueue
+  uint32_t tail = 0; // incremented on dequeue
 
-  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(int)), FIFO_SUCCESS);
+  ASSERT_EQ(fifo_create_for_object_size(&fifo, sizeof(uint32_t)), FIFO_SUCCESS);
 
   ASSERT_NE(fifo, (void *) NULL);
 
@@ -149,7 +153,7 @@ TEST(FIFO, preserves_fifo_after_dequeueing_not_all)
 
   for (; head < 20; head++)
   {
-    int returned = -1;
+    uint32_t returned = -1;
 
     ret = fifo_enqueue(fifo, &head);
     EXPECT_EQ(ret, FIFO_SUCCESS);
@@ -162,7 +166,7 @@ TEST(FIFO, preserves_fifo_after_dequeueing_not_all)
 
   for (; tail < head; tail++)
   {
-    int returned = -1;
+    uint32_t returned = -1;
 
     ret = fifo_dequeue(fifo, &returned);
     EXPECT_EQ(ret, FIFO_SUCCESS);
