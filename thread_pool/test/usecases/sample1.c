@@ -92,7 +92,7 @@ static void prepare_signal_set(void)
   sigemptyset(&signal_set);
   sigaddset(&signal_set, SIGINT);
 
-  CHECKED(pthread_sigmask(SIG_BLOCK, &signal_set, NULL));
+  pthread_sigmask(SIG_BLOCK, &signal_set, NULL);
 }
 
 int main(void)
@@ -109,7 +109,7 @@ int main(void)
   values = calloc(WORK_ITEMS_NUMBER, sizeof(*values));
 
   /* Create thread that will shutdown thread pool on SIGINT */
-  CHECKED(pthread_create(&signal_thread, NULL, signal_waiter, tpool));
+  pthread_create(&signal_thread, NULL, signal_waiter, tpool);
   
   for (size_t i = 0; i < WORK_ITEMS_NUMBER; i++)
   {
