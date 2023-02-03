@@ -57,10 +57,10 @@ void work_queue_destroy(work_queue_t * work_queue)
 {
   assert(work_queue != NULL);
 
-  CHECKED(fifo_destroy(work_queue->fifo));
+  asserting(fifo_destroy(work_queue->fifo) == FIFO_SUCCESS);
   
-  CHECKED(pthread_mutex_destroy(&work_queue->mutex));
-  CHECKED(pthread_cond_destroy(&work_queue->no_work_cv));
+  asserting(pthread_mutex_destroy(&work_queue->mutex) == 0);
+  asserting(pthread_cond_destroy(&work_queue->no_work_cv) == 0);
 
   free(work_queue);
 }
@@ -71,9 +71,9 @@ bool work_queue_is_empty(work_queue_t * work_queue)
 
   bool result;
 
-  CHECKED(pthread_mutex_lock(&work_queue->mutex));
+  asserting(pthread_mutex_lock(&work_queue->mutex) == 0);
   result = fifo_is_empty(work_queue->fifo);
-  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
+  asserting(pthread_mutex_unlock(&work_queue->mutex) == 0);
 
   return result;
 }
@@ -82,14 +82,14 @@ void work_queue_wait_while_no_work(work_queue_t * work_queue)
 {
   assert(work_queue != NULL);
 
-  CHECKED(pthread_mutex_lock(&work_queue->mutex));
+  asserting(pthread_mutex_lock(&work_queue->mutex) == 0);
 
   while (fifo_is_empty(work_queue->fifo) && !work_queue->stopped_accepting)
   {
-    pthread_cond_wait(&work_queue->no_work_cv, &work_queue->mutex);
+    asserting(pthread_cond_wait(&work_queue->no_work_cv, &work_queue->mutex) == 0);
   }
 
-  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
+  asserting(pthread_mutex_unlock(&work_queue->mutex) == 0);
 }
 
 err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
@@ -99,7 +99,7 @@ err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
 
   err_t err = SUCCESS;
 
-  CHECKED(pthread_mutex_lock(&work_queue->mutex));
+  asserting(pthread_mutex_lock(&work_queue->mutex) == 0);
   {
     if (work_queue->stopped_accepting)
     {
@@ -107,11 +107,10 @@ err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
     }
     else
     {
-      fifo_ret_t ret = fifo_enqueue(work_queue->fifo, p_work);
-      CHECKED(ret);
+      asserting(fifo_enqueue(work_queue->fifo, p_work) == 0);
     }
   }
-  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
+  asserting(pthread_mutex_unlock(&work_queue->mutex) == 0);
 
   return err;
 }
@@ -123,7 +122,7 @@ err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
 
   err_t err = SUCCESS;
 
-  CHECKED(pthread_mutex_lock(&work_queue->mutex));
+  asserting(pthread_mutex_lock(&work_queue->mutex) == 0);
   {
     if (fifo_is_empty(work_queue->fifo) && work_queue->stopped_accepting)
     {
@@ -135,10 +134,10 @@ err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
     }
     else
     {
-      fifo_dequeue(work_queue->fifo, p_work);
+      asserting(fifo_dequeue(work_queue->fifo, p_work) == 0);
     }
   }
-  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
+  asserting(pthread_mutex_unlock(&work_queue->mutex) == 0);
 
   return err;
 }
@@ -147,14 +146,14 @@ void work_queue_stop_accepting(work_queue_t * work_queue)
 {
   assert(work_queue != NULL);
 
-  CHECKED(pthread_mutex_lock(&work_queue->mutex));
+  asserting(pthread_mutex_lock(&work_queue->mutex) == 0);
+  {
+    assert(!work_queue->stopped_accepting);
 
-  assert(!work_queue->stopped_accepting);
+    work_queue->stopped_accepting = true;
 
-  work_queue->stopped_accepting = true;
-
-  pthread_cond_broadcast(&work_queue->no_work_cv);
-
-  CHECKED(pthread_mutex_unlock(&work_queue->mutex));
+    asserting(pthread_cond_broadcast(&work_queue->no_work_cv) == 0);
+  }
+  asserting(pthread_mutex_unlock(&work_queue->mutex) == 0);
 }
 

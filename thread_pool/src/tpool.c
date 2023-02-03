@@ -65,8 +65,8 @@ static size_t try_to_create_threads(size_t n, pthread_t * threads, void * contex
 
 tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number)
 {
-  size_t    size  = sizeof(tpool_t) + sizeof(pthread_t) * threads_number;
-  tpool_t * tpool = MALLOC_OR_RETURN(size, TPOOL_EMEMALLOC);
+  assert(p_tpool != NULL);
+  
 
   work_queue_t * queue   = work_queue_create();
   size_t threads_created = try_to_create_threads(threads_number, tpool->threads, queue);
@@ -92,10 +92,15 @@ rollback:
   tpool_destroy(tpool);
 
   return TPOOL_ESYSFAIL;
+
+try_failure_2: free(tpool);
+try_failure_1: return TPOOL_EMEMALLOC;
 }
 
 void tpool_destroy(tpool_t * tpool)
 {
+  assert(tpool != NULL);
+
   work_queue_destroy(tpool->work_queue);
 
   free(tpool);
@@ -103,6 +108,8 @@ void tpool_destroy(tpool_t * tpool)
 
 tpool_ret_t tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
 {
+  assert(tpool != NULL);
+
   work_t work =
   {
     .routine = routine,
@@ -114,27 +121,31 @@ tpool_ret_t tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
     case SUCCESS:              return TPOOL_SUCCESS;
     case ERROR_OUT_OF_SERVICE: return TPOOL_EREQREJECTED;
 
-    default: assert(false);
+    default: assert(!"Expected work_queue_add() return code");
   }
 }
 
 void tpool_shutdown(tpool_t * tpool)
 {
+  assert(tpool != NULL);
+
   work_queue_stop_accepting(tpool->work_queue);
 }
 
 void tpool_join(tpool_t * tpool)
 {
+  assert(tpool != NULL);
+
   for (size_t i = 0; i < tpool->threads_number; i++)
   {
-    int ret = pthread_join(tpool->threads[i], NULL);
-
-    CHECK_ERROR(ret, "Joining the threads in a pool.");
+    asserting(pthread_join(tpool->threads[i], NULL) == 0);
   }
 }
 
 void tpool_join_then_destroy(tpool_t * tpool)
 {
+  assert(tpool != NULL);
+
   tpool_join(tpool);
   tpool_destroy(tpool);
 }
