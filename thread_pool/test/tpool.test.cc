@@ -85,3 +85,18 @@ TEST(TPoolMultiThreaded, executes_all_works_multiple_of_threads_number)
   tpool_destroy(tpool);
 }
 
+TEST(TPoolMultiThreaded, rejects_works_after_shutdown)
+{
+  tpool_t * tpool = NULL;
+
+  auto routine = [](void *){};
+
+  ASSERT_EQ(tpool_create(&tpool, 8), TPOOL_SUCCESS);
+
+  tpool_shutdown(tpool);
+
+  EXPECT_EQ(tpool_add_work(tpool, routine, NULL), TPOOL_EREQREJECTED);
+
+  tpool_join_then_destroy(tpool);
+}
+
