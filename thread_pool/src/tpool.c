@@ -24,7 +24,7 @@ static void * thread_routine(void * arg)
   work_t work;
   err_t  err;
 
-  while ((err = work_queue_remove(work_queue, &work)) != ERROR_OUT_OF_SERVICE)
+  while ((err = work_queue_pop(work_queue, &work)) != ERROR_OUT_OF_SERVICE)
   {
     if (err == SUCCESS)
     {
@@ -115,7 +115,7 @@ tpool_ret_t tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
     .arg     = arg,
   };
 
-  switch (work_queue_add(tpool->work_queue, &work))
+  switch (work_queue_push(tpool->work_queue, &work))
   {
     case SUCCESS:              return TPOOL_SUCCESS;
     case ERROR_OUT_OF_SERVICE: return TPOOL_EREQREJECTED;

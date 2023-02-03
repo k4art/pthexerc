@@ -22,8 +22,8 @@ void work_queue_destroy(work_queue_t * work_queue);
 
 bool work_queue_is_empty(work_queue_t * work_queue);
 
-err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work);
-err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work);
+err_t work_queue_push(work_queue_t * work_queue, const work_t * p_work);
+err_t work_queue_pop(work_queue_t * work_queue, work_t * p_work);
 
 void work_queue_wait_while_no_work(work_queue_t * work_queue);
 void work_queue_stop_accepting(work_queue_t * work_queue);

@@ -78,7 +78,7 @@ void work_queue_wait_while_no_work(work_queue_t * work_queue)
   asserting(pthread_mutex_unlock(&work_queue->mutex) == 0);
 }
 
-err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
+err_t work_queue_push(work_queue_t * work_queue, const work_t * p_work)
 {
   assert(work_queue != NULL);
   assert(p_work != NULL);
@@ -101,7 +101,7 @@ err_t work_queue_add(work_queue_t * work_queue, const work_t * p_work)
   return err;
 }
 
-err_t work_queue_remove(work_queue_t * work_queue, work_t * p_work)
+err_t work_queue_pop(work_queue_t * work_queue, work_t * p_work)
 {
   assert(work_queue != NULL);
   assert(p_work != NULL);
