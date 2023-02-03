@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdbool.h>
 
 #include "tpool.h"
 

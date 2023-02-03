@@ -1,7 +1,7 @@
 #ifndef TPOOL_H
 #define TPOOL_H
 
-#include "work_queue.h"
+#include <stddef.h>
 
 typedef struct tpool_s tpool_t;
 
@@ -12,6 +12,8 @@ typedef enum tpool_ret_e
   TPOOL_EMEMALLOC,
   TPOOL_EREQREJECTED,
 } tpool_ret_t;
+
+typedef void (* tpool_work_routine_t)(void * context);
 
 /**
  * @brief         Creates a thread pool.
@@ -43,7 +45,7 @@ void tpool_destroy(tpool_t * tpool);
  * @retval        TPOOL_EMEMALLOC     Failed to allocate memory.
  * @retval        TPOOL_EREQREJECTED  No longer accepts new works.
  */
-tpool_ret_t tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg);
+tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void * arg);
 
 /**
  * @brief         Stops accepting new works
