@@ -20,20 +20,37 @@ struct work_queue_s
   bool stopped_accepting;
 };
 
-work_queue_t * work_queue_create()
+work_queue_t * work_queue_create(void)
 {
   void * memory = malloc_c(sizeof(work_queue_t));
 
   work_queue_t * work_queue = memory;
 
-  CHECKED(fifo_create_for_object_size(&work_queue->fifo, sizeof(work_t)));
+  fifo_ret_t ret = fifo_create_for_object_size(&work_queue->fifo, sizeof(work_t));
 
-  CHECKED(pthread_mutex_init(&work_queue->mutex, NULL));
-  CHECKED(pthread_cond_init(&work_queue->no_work_cv, NULL));
+  if (ret != FIFO_SUCCESS)
+    goto error_free_memory;
+
+  if (pthread_mutex_init(&work_queue->mutex, NULL) != 0)
+    goto error_free_fifo_and_memory;
+  
+  if (pthread_cond_init(&work_queue->no_work_cv, NULL) != 0)
+    goto error_free_mutex_fifo_and_memory;
 
   work_queue->stopped_accepting = false;
 
   return work_queue;
+
+error_free_mutex_fifo_and_memory:
+  pthread_mutex_destroy(&work_queue->mutex);
+
+error_free_fifo_and_memory:
+  fifo_destroy(work_queue->fifo);
+
+error_free_memory:
+  free(memory);
+
+  return NULL;
 }
 
 void work_queue_destroy(work_queue_t * work_queue)
