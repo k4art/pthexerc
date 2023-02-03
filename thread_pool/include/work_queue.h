@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "errors.h"
+#include "internals/common.h"
 
 typedef void (* work_routine_t)(void * arg);
 

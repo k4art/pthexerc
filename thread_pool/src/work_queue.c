@@ -6,8 +6,6 @@
 #include "fifo/fifo.h"
 #include "internals/malloc_c.h"
 
-#include "errors.h"
-
 #include "work_queue.h"
 
 struct work_queue_s
@@ -22,35 +20,23 @@ struct work_queue_s
 
 work_queue_t * work_queue_create(void)
 {
-  void * memory = malloc_c(sizeof(work_queue_t));
+  void * memory = malloc(sizeof(work_queue_t));
 
-  work_queue_t * work_queue = memory;
+  work_queue_t * work_queue = NULL;
 
-  fifo_ret_t ret = fifo_create_for_object_size(&work_queue->fifo, sizeof(work_t));
-
-  if (ret != FIFO_SUCCESS)
-    goto error_free_memory;
-
-  if (pthread_mutex_init(&work_queue->mutex, NULL) != 0)
-    goto error_free_fifo_and_memory;
-  
-  if (pthread_cond_init(&work_queue->no_work_cv, NULL) != 0)
-    goto error_free_mutex_fifo_and_memory;
+  TRY_NEW(1, work_queue = malloc(sizeof(work_queue_t)));
+  TRY_EOK(2, fifo_create_for_object_size(&work_queue->fifo, sizeof(work_t)));
+  TRY_EOK(3, pthread_mutex_init(&work_queue->mutex, NULL));
+  TRY_EOK(4, pthread_cond_init(&work_queue->no_work_cv, NULL));
 
   work_queue->stopped_accepting = false;
 
   return work_queue;
 
-error_free_mutex_fifo_and_memory:
-  pthread_mutex_destroy(&work_queue->mutex);
-
-error_free_fifo_and_memory:
-  fifo_destroy(work_queue->fifo);
-
-error_free_memory:
-  free(memory);
-
-  return NULL;
+try_failure_4: pthread_mutex_destroy(&work_queue->mutex);
+try_failure_3: fifo_destroy(work_queue->fifo);
+try_failure_2: free(memory);
+try_failure_1: return NULL;
 }
 
 void work_queue_destroy(work_queue_t * work_queue)

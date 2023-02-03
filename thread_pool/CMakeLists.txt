@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD   11)
 set(CMKAE_CXX_STANDARD 14)
 
 include_directories(include)
+include_directories(src)
 
 enable_testing()
 

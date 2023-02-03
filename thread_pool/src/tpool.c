@@ -5,9 +5,6 @@
 #include <assert.h>
 #include <errno.h>
 
-#include "errors.h"
-#include "internals/malloc_c.h"
-
 #include "work_queue.h"
 
 #include "tpool.h"
@@ -19,11 +16,6 @@ struct tpool_s
 
   pthread_t      threads[];
 };
-
-#define MALLOC_OR_RETURN(size, ret) ({ \
-  void * mem = malloc((size));         \
-  if (mem == NULL) return ret;         \
-  mem; }) 
 
 static void * thread_routine(void * arg)
 {
@@ -47,17 +39,18 @@ static void * thread_routine(void * arg)
   return NULL;
 }
 
-static size_t try_to_create_threads(size_t n, pthread_t * threads, void * context)
+static size_t try_to_create_threads(size_t n, void * context, pthread_t * threads)
 {
   size_t created = 0;
+  int ret = 0;
 
-  for (; created < n; created++)
+  while (created < n && ret == 0)
   {
-    int ret = pthread_create(threads + created, NULL, thread_routine, context);
+    ret = pthread_create(threads + created, NULL, thread_routine, context);
 
-    assert(ret == 0 || ret == EAGAIN);
+    assert(ret == 0 || ret == EAGAIN && "pthread_create() failed");
 
-    if (ret != 0) break;
+    if (ret == 0) created++;
   }
 
   return created;
@@ -66,10 +59,16 @@ static size_t try_to_create_threads(size_t n, pthread_t * threads, void * contex
 tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number)
 {
   assert(p_tpool != NULL);
-  
 
-  work_queue_t * queue   = work_queue_create();
-  size_t threads_created = try_to_create_threads(threads_number, tpool->threads, queue);
+  tpool_t      * tpool = NULL;
+  work_queue_t * queue = NULL;
+
+  size_t size = sizeof(tpool_t) + sizeof(pthread_t) * threads_number;
+
+  TRY_NEW(1, tpool = malloc(size));
+  TRY_NEW(2, queue = work_queue_create());
+
+  size_t threads_created = try_to_create_threads(threads_number, queue, tpool->threads);
 
   tpool->threads_number = threads_created; // NOT threads_number, see rollback
   tpool->work_queue     = queue;
