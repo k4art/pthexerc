@@ -3,14 +3,13 @@
 extern "C"
 {
   #include "tpool.h"
-  #include "work_queue.h"
 }
 
 TEST(TPoolSingleThreaded, joins_when_no_works_given)
 {
   tpool_t * tpool = NULL;
   
-  tpool_create(&tpool, 1);
+  ASSERT_EQ(tpool_create(&tpool, 1), TPOOL_SUCCESS);
 
   tpool_shutdown(tpool);
   tpool_join_then_destroy(tpool);
@@ -19,7 +18,8 @@ TEST(TPoolSingleThreaded, joins_when_no_works_given)
 TEST(TPoolSingleThreaded, executes_all_works_in_fifo)
 {
   tpool_t * tpool = NULL;
-  tpool_create(&tpool, 1);
+
+  ASSERT_EQ(tpool_create(&tpool, 1), TPOOL_SUCCESS);
 
   auto work_routine = [](void * context)
     {
@@ -35,7 +35,7 @@ TEST(TPoolSingleThreaded, executes_all_works_in_fifo)
 
   for (int i = 0; i < 32; i++)
   {
-    tpool_add_work(tpool, work_routine, (void *) (intptr_t) i);
+    EXPECT_EQ(tpool_add_work(tpool, work_routine, (void *) (intptr_t) i), TPOOL_SUCCESS);
   }
 
   tpool_shutdown(tpool);
@@ -45,7 +45,8 @@ TEST(TPoolSingleThreaded, executes_all_works_in_fifo)
 TEST(TPoolMultiThreaded, joins_when_no_works_given)
 {
   tpool_t * tpool = NULL;
-  tpool_create(&tpool, 8);
+
+  ASSERT_EQ(tpool_create(&tpool, 8), TPOOL_SUCCESS);
 
   tpool_shutdown(tpool);
   tpool_join_then_destroy(tpool);
@@ -54,10 +55,12 @@ TEST(TPoolMultiThreaded, joins_when_no_works_given)
 TEST(TPoolMultiThreaded, executes_all_works_multiple_of_threads_number)
 {
   const size_t TOTAL_WORKS_NO = 8;
+
   bool work_done_f[TOTAL_WORKS_NO];
   
   tpool_t * tpool = NULL;
-  tpool_create(&tpool, 8);
+
+  ASSERT_EQ(tpool_create(&tpool, 8), TPOOL_SUCCESS);
 
   auto work_routine = [](void * context)
     {
@@ -68,7 +71,7 @@ TEST(TPoolMultiThreaded, executes_all_works_multiple_of_threads_number)
 
   for (int i = 0; i < TOTAL_WORKS_NO; i++)
   {
-    tpool_add_work(tpool, work_routine, (void *) &work_done_f[i]);
+    EXPECT_EQ(tpool_add_work(tpool, work_routine, (void *) &work_done_f[i]), TPOOL_SUCCESS);
   }
 
   tpool_shutdown(tpool);

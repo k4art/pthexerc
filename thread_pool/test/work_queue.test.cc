@@ -56,6 +56,8 @@ TEST_F(WorkQueue, creates_empty_queue)
 {
   work_queue_t * queue = work_queue_create();
   
+  ASSERT_NE(queue, nullptr);
+
   EXPECT_TRUE(work_queue_is_empty(queue));
 
   work_queue_destroy(queue);
@@ -66,6 +68,8 @@ TEST_F(WorkQueue, add_and_remove_by_single_element)
   work_t temp;
 
   work_queue_t * queue = work_queue_create();
+  
+  ASSERT_NE(queue, nullptr);
 
   for (size_t i = 0; i < 7; i++)
   {
@@ -83,6 +87,8 @@ TEST_F(WorkQueue, add_and_remove_by_many_elements)
   work_t temp;
 
   work_queue_t * queue = work_queue_create();
+  
+  ASSERT_NE(queue, nullptr);
 
   for (size_t tries = 0; tries < 5; tries++)
   {
@@ -110,6 +116,8 @@ TEST_F(WorkQueue, removing_not_all_preserves_fifo)
   work_t temp;
 
   work_queue_t * queue = work_queue_create();
+  
+  ASSERT_NE(queue, nullptr);
 
   for (size_t i = 0; i < INITIALLY_ELEMS_NO; i++)
   {
@@ -143,9 +151,11 @@ TEST_F(WorkQueue, removing_not_all_preserves_fifo)
 
 TEST_F(WorkQueue, broadcasts_after_adding_to_empty)
 {
-  work_queue_t * queue = work_queue_create();
-
   bool success_flag = false;
+
+  work_queue_t * queue = work_queue_create();
+  
+  ASSERT_NE(queue, nullptr);
 
   ASSERT_EQ(work_queue_add(queue, DummyWork(0)), SUCCESS);
 
@@ -153,7 +163,7 @@ TEST_F(WorkQueue, broadcasts_after_adding_to_empty)
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
     work_t temp;
-    work_queue_remove(queue, &temp);
+    EXPECT_EQ(work_queue_remove(queue, &temp), SUCCESS);
   });
 
   std::thread thread_waiter([&]() {
@@ -176,6 +186,8 @@ TEST_F(WorkQueue, stops_accepting_new_works)
 {
   work_queue_t * queue = work_queue_create();
 
+  ASSERT_NE(queue, nullptr);
+
   work_queue_stop_accepting(queue);
 
   EXPECT_EQ(work_queue_add(queue, DummyWork(0)), ERROR_OUT_OF_SERVICE);
@@ -188,6 +200,8 @@ TEST_F(WorkQueue, returns_works_before_stop_accepting)
 {
   work_t temp;
   work_queue_t * queue = work_queue_create();
+
+  ASSERT_NE(queue, nullptr);
 
   ASSERT_EQ(work_queue_add(queue, DummyWork(0)), SUCCESS);
   ASSERT_EQ(work_queue_add(queue, DummyWork(1)), SUCCESS);
