@@ -149,39 +149,6 @@ TEST_F(WorkQueue, removing_not_all_preserves_fifo)
   work_queue_destroy(queue);
 }
 
-TEST_F(WorkQueue, broadcasts_after_adding_to_empty)
-{
-  bool success_flag = false;
-
-  work_queue_t * queue = work_queue_create();
-  
-  ASSERT_NE(queue, nullptr);
-
-  ASSERT_EQ(work_queue_push(queue, DummyWork(0)), SUCCESS);
-
-  std::thread thread_remover([&]() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-    work_t temp;
-    EXPECT_EQ(work_queue_pop(queue, &temp), SUCCESS);
-  });
-
-  std::thread thread_waiter([&]() {
-    work_queue_stop_accepting(queue);
-
-    success_flag = true;
-  });
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(15));
-
-  EXPECT_TRUE(success_flag);
-
-  thread_remover.detach();
-  thread_waiter.detach();
-
-  work_queue_destroy(queue);
-}
-
 TEST_F(WorkQueue, stops_accepting_new_works)
 {
   work_queue_t * queue = work_queue_create();
@@ -192,6 +159,57 @@ TEST_F(WorkQueue, stops_accepting_new_works)
 
   EXPECT_EQ(work_queue_push(queue, DummyWork(0)), ERROR_OUT_OF_SERVICE);
   EXPECT_EQ(work_queue_push(queue, DummyWork(0)), ERROR_OUT_OF_SERVICE);
+
+  work_queue_destroy(queue);
+}
+
+TEST_F(WorkQueue, pushing_work_wakes_up)
+{
+  work_t temp;
+  work_queue_t * queue = work_queue_create();
+  bool wakeup_flag = false;
+
+  ASSERT_NE(queue, nullptr);
+
+  std::thread thread_waiter([&]() {
+    work_queue_wait_while_no_work(queue);
+
+    EXPECT_EQ(work_queue_pop(queue, &temp), SUCCESS);
+
+    wakeup_flag = true;
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  EXPECT_EQ(work_queue_push(queue, DummyWork(0)), SUCCESS);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  thread_waiter.detach();
+
+  EXPECT_TRUE(wakeup_flag);
+
+  work_queue_destroy(queue);
+}
+
+TEST_F(WorkQueue, stop_accepting_wakes_up)
+{
+  work_t temp;
+  work_queue_t * queue = work_queue_create();
+  bool wakeup_flag = false;
+
+  ASSERT_NE(queue, nullptr);
+
+  std::thread thread_waiter([&]() {
+    work_queue_wait_while_no_work(queue);
+    wakeup_flag = true;
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  work_queue_stop_accepting(queue);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  thread_waiter.detach();
+
+  EXPECT_TRUE(wakeup_flag);
 
   work_queue_destroy(queue);
 }
