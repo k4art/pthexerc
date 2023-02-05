@@ -119,6 +119,7 @@ int main(void)
   }
 
   tpool_join(tpool);
+  pthread_join(signal_thread, NULL);
   
   /* Main thread is blocked untill all works are done */
   /* and the thread pool is shutdown. */
