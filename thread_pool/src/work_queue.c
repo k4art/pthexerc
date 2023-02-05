@@ -112,11 +112,13 @@ err_t work_queue_pop(work_queue_t * work_queue, work_t * p_work)
 
   asserting(pthread_mutex_lock(&work_queue->mutex) == 0);
   {
-    if (fifo_is_empty(work_queue->fifo) && work_queue->stopped_accepting)
+    bool is_empty = fifo_is_empty(work_queue->fifo);
+    
+    if (is_empty && work_queue->stopped_accepting)
     {
       err = ERROR_OUT_OF_SERVICE;
     }
-    else if (fifo_is_empty(work_queue->fifo))
+    else if (is_empty)
     {
       err = ERROR_UNDERFLOW;
     }
@@ -136,11 +138,12 @@ void work_queue_stop_accepting(work_queue_t * work_queue)
 
   asserting(pthread_mutex_lock(&work_queue->mutex) == 0);
   {
-    assert(!work_queue->stopped_accepting);
+    if (!work_queue->stopped_accepting)
+    {
+      work_queue->stopped_accepting = true;
 
-    work_queue->stopped_accepting = true;
-
-    asserting(pthread_cond_broadcast(&work_queue->no_work_cv) == 0);
+      asserting(pthread_cond_broadcast(&work_queue->no_work_cv) == 0);
+    }
   }
   asserting(pthread_mutex_unlock(&work_queue->mutex) == 0);
 }
