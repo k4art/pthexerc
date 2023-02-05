@@ -105,7 +105,7 @@ void tpool_destroy(tpool_t * tpool)
   free(tpool);
 }
 
-tpool_ret_t tpool_add_work(tpool_t * tpool, work_routine_t routine, void * arg)
+tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void * arg)
 {
   assert(tpool != NULL);
 
