@@ -39,7 +39,7 @@ static bool check_works_are_done(int * values)
   {
     if (values[i] != i + VALUE_INCREMENT)
     {
-      fprintf(stderr, "[FAILURE]: values[%zu] = %d", i, values[i]);
+      fprintf(stderr, "[FAILURE]: values[%zu] = %d\n", i, values[i]);
       success = false;
     }
   }
