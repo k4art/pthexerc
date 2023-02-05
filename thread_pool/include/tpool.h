@@ -28,7 +28,7 @@ typedef void (* tpool_work_routine_t)(void * context);
 tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number);
 
 /**
- * @brief         Destroies a thread pool.
+ * @brief         Destroys a thread pool.
  *
  * @param[in]     tpool
  */
@@ -64,7 +64,7 @@ void tpool_shutdown(tpool_t * tpool);
 void tpool_join(tpool_t * tpool);
 
 /**
- * @brief         Joins all threads in the pool, then destroies it.
+ * @brief         Joins all threads in the pool, then destroys it.
  *
  * @note          The thread will not be unblocked, if the pool was not shutdown.
  *
