@@ -20,8 +20,6 @@ struct work_queue_s
 
 work_queue_t * work_queue_create(void)
 {
-  void * memory = malloc(sizeof(work_queue_t));
-
   work_queue_t * work_queue = NULL;
 
   TRY_NEW(1, work_queue = malloc(sizeof(work_queue_t)));
@@ -35,7 +33,7 @@ work_queue_t * work_queue_create(void)
 
 try_failure_4: pthread_mutex_destroy(&work_queue->mutex);
 try_failure_3: fifo_destroy(work_queue->fifo);
-try_failure_2: free(memory);
+try_failure_2: free(work_queue);
 try_failure_1: return NULL;
 }
 
