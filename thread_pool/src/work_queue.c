@@ -93,7 +93,11 @@ err_t work_queue_push(work_queue_t * work_queue, const work_t * p_work)
     }
     else
     {
+      bool should_wakeup = fifo_is_empty(work_queue->fifo);
       asserting(fifo_enqueue(work_queue->fifo, p_work) == 0);
+
+      if (should_wakeup) 
+        asserting(pthread_cond_broadcast(&work_queue->no_work_cv) == 0);
     }
   }
   asserting(pthread_mutex_unlock(&work_queue->mutex) == 0);
