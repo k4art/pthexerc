@@ -157,12 +157,16 @@ tpool_ret_t tpool_join(tpool_t * tpool)
 {
   assert(tpool != NULL);
 
+  bool sysfail = false;
+
   for (size_t i = 0; i < tpool->threads_number; i++)
   {
-    EOK_OR_RETURN(pthread_join(tpool->threads[i], NULL), TPOOL_ESYSFAIL);
+    int ret = pthread_join(tpool->threads[i], NULL);
+
+    if (ret != 0) sysfail = true;
   }
 
-  return TPOOL_SUCCESS;
+  return sysfail ? TPOOL_ESYSFAIL : TPOOL_SUCCESS;
 }
 
 tpool_ret_t tpool_join_then_destroy(tpool_t * tpool)
