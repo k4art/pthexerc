@@ -48,7 +48,7 @@ typedef enum err_e
 
 #define EOK_OR_RETURN(expr, ret)    \
   do {                              \
-    if (expr != 0)                  \
+    if ((expr) != 0)                \
       return (ret);                 \
   } while (0)
 
