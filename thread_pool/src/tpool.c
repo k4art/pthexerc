@@ -34,10 +34,12 @@ static tpool_ret_t adopt_err(err_t err)
 
 #define ADOPT_ERR(err) adopt_err(err)
 
-#define ARG_SHOULD_BE(expr)      \
-  do {                           \
-    if (!(expr))                 \
-      return TPOOL_EINVARG;      \
+#define ARG_SHOULD_BE(expr)                    \
+  do {                                         \
+    bool ok = (expr);                          \
+    assert(ok && "Invalid argument: " #expr);  \
+    if (!(expr))                               \
+      return TPOOL_EINVARG;                    \
   } while (0)
 
 static void * thread_routine(void * arg)
