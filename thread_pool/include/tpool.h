@@ -8,6 +8,7 @@ typedef struct tpool_s tpool_t;
 typedef enum tpool_ret_e
 {
   TPOOL_SUCCESS = 0,
+  TPOOL_EINVARG,
   TPOOL_ESYSFAIL,
   TPOOL_EMEMALLOC,
   TPOOL_EREQREJECTED,
@@ -19,9 +20,10 @@ typedef void (* tpool_work_routine_t)(void * context);
  * @brief         Creates a thread pool.
  *
  * @param[out]    p_tpool
- * @param[in]     threads_number
+ * @param[in]     threads_number  Should be at least 1.
  *
  * @retval        TPOOL_SUCCESS    Instance is created successfully.
+ * @retval        TPOOL_EINVARG    Invalid arguments.
  * @retval        TPOOL_ESYSFAIL   Threads could not be started.
  * @retval        TPOOL_EMEMALLOC  Failed to allocate memory.
  */
@@ -31,8 +33,11 @@ tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number);
  * @brief         Destroys a thread pool.
  *
  * @param[in]     tpool
+ *
+ * @retval        TPOOL_SUCCESS  Operation succeed.
+ * @retval        TPOOL_EINVARG  Invalid arguments.
  */
-void tpool_destroy(tpool_t * tpool);
+tpool_ret_t tpool_destroy(tpool_t * tpool);
 
 /**
  * @brief         Enqueues a new work to the internal work queue.
@@ -42,6 +47,7 @@ void tpool_destroy(tpool_t * tpool);
  * @param[in]     arg      Argument to be passed to the routine.
  *
  * @retval        TPOOL_SUCCESS       Operation succeed.
+ * @retval        TPOOL_EINVARG       Invalid arguments.
  * @retval        TPOOL_EMEMALLOC     Failed to allocate memory.
  * @retval        TPOOL_EREQREJECTED  No longer accepts new works.
  * @retval        TPOOL_ESYSFAIL      System prevented from success.
@@ -56,6 +62,7 @@ tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void *
  * @param[in]     tpool
  *
  * @retval        TPOOL_SUCCESS   Operation succeed.
+ * @retval        TPOOL_EINVARG   Invalid arguments.
  * @retval        TPOOL_ESYSFAIL  System prevented from success.
  */
 tpool_ret_t tpool_shutdown(tpool_t * tpool);
@@ -68,6 +75,7 @@ tpool_ret_t tpool_shutdown(tpool_t * tpool);
  * @param[in]     tpool
  *
  * @retval        TPOOL_SUCCESS   Operation succeed.
+ * @retval        TPOOL_EINVARG   Invalid arguments.
  * @retval        TPOOL_ESYSFAIL  Some threads could not join.
  */
 tpool_ret_t tpool_join(tpool_t * tpool);
@@ -80,6 +88,7 @@ tpool_ret_t tpool_join(tpool_t * tpool);
  * @param[in]     tpool
  *
  * @retval        TPOOL_SUCCESS   Operation succeed.
+ * @retval        TPOOL_EINVARG   Invalid arguments.
  * @retval        TPOOL_ESYSFAIL  Some threads could not join.
  *                                In this case tpool was not destroyed.
  */

@@ -5,6 +5,20 @@ extern "C"
   #include "tpool.h"
 }
 
+TEST(TPool, handles_invalid_arguments)
+{
+  tpool_t * tpool = NULL;
+  
+  EXPECT_EQ(tpool_create(NULL, 8),   TPOOL_EINVARG);
+  EXPECT_EQ(tpool_create(&tpool, 0), TPOOL_EINVARG);
+  EXPECT_EQ(tpool_create(NULL, 0),   TPOOL_EINVARG);
+
+  EXPECT_EQ(tpool_shutdown(NULL), TPOOL_EINVARG);
+  EXPECT_EQ(tpool_join(NULL),     TPOOL_EINVARG);
+  EXPECT_EQ(tpool_join_then_destroy(NULL), TPOOL_EINVARG);
+  EXPECT_EQ(tpool_destroy(NULL), TPOOL_EINVARG);
+}
+
 TEST(TPoolSingleThreaded, joins_when_no_works_given)
 {
   tpool_t * tpool = NULL;

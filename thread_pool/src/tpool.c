@@ -34,6 +34,12 @@ static tpool_ret_t adopt_err(err_t err)
 
 #define ADOPT_ERR(err) adopt_err(err)
 
+#define ARG_SHOULD_BE(expr)      \
+  do {                           \
+    if (!(expr))                 \
+      return TPOOL_EINVARG;      \
+  } while (0)
+
 static void * thread_routine(void * arg)
 {
   work_queue_t * work_queue = arg;
@@ -59,6 +65,10 @@ static void * thread_routine(void * arg)
 
 static size_t try_to_create_threads(size_t n, void * context, pthread_t * threads)
 {
+  assert(n > 0);
+  assert(context != NULL);
+  assert(threads != NULL);
+  
   size_t created = 0;
   int ret = 0;
 
@@ -76,8 +86,8 @@ static size_t try_to_create_threads(size_t n, void * context, pthread_t * thread
 
 tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number)
 {
-  assert(p_tpool != NULL);
-  assert(threads_number > 0);
+  ARG_SHOULD_BE(p_tpool != NULL);
+  ARG_SHOULD_BE(threads_number > 0);
 
   tpool_t      * tpool = NULL;
   work_queue_t * queue = NULL;
@@ -115,19 +125,21 @@ try_failure_2: free(tpool);
 try_failure_1: return TPOOL_EMEMALLOC;
 }
 
-void tpool_destroy(tpool_t * tpool)
+tpool_ret_t tpool_destroy(tpool_t * tpool)
 {
-  assert(tpool != NULL);
+  ARG_SHOULD_BE(tpool != NULL);
 
   work_queue_destroy(tpool->work_queue);
 
   free(tpool);
+
+  return TPOOL_SUCCESS;
 }
 
 tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void * arg)
 {
-  assert(tpool   != NULL);
-  assert(routine != NULL);
+  ARG_SHOULD_BE(tpool   != NULL);
+  ARG_SHOULD_BE(routine != NULL);
 
   work_t work =
   {
@@ -146,7 +158,7 @@ tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void *
 
 tpool_ret_t tpool_shutdown(tpool_t * tpool)
 {
-  assert(tpool != NULL);
+  ARG_SHOULD_BE(tpool != NULL);
 
   err_t err = work_queue_stop_accepting(tpool->work_queue);
 
@@ -155,7 +167,7 @@ tpool_ret_t tpool_shutdown(tpool_t * tpool)
 
 tpool_ret_t tpool_join(tpool_t * tpool)
 {
-  assert(tpool != NULL);
+  ARG_SHOULD_BE(tpool != NULL);
 
   bool sysfail = false;
 
@@ -171,7 +183,7 @@ tpool_ret_t tpool_join(tpool_t * tpool)
 
 tpool_ret_t tpool_join_then_destroy(tpool_t * tpool)
 {
-  assert(tpool != NULL);
+  ARG_SHOULD_BE(tpool != NULL);
 
   if (tpool_join(tpool) != 0)
   {
