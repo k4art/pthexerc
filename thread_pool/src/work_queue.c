@@ -4,7 +4,6 @@
 #include <assert.h>
 
 #include "fifo/fifo.h"
-#include "internals/malloc_c.h"
 
 #include "work_queue.h"
 
