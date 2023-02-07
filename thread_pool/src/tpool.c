@@ -17,6 +17,23 @@ struct tpool_s
   pthread_t      threads[];
 };
 
+static tpool_ret_t adopt_err(err_t err)
+{
+  switch (err)
+  {
+    case E_OK:        return TPOOL_SUCCESS;
+    case E_SYSFAIL:   return TPOOL_ESYSFAIL;
+    case E_BADREQ:    return TPOOL_EREQREJECTED;
+    case E_MEMALLOC:  return TPOOL_EMEMALLOC;
+
+    // these errors require special treatment
+    case E_UNDERFLOW:
+    case E_OVERFLOW:  return (assert(false), TPOOL_EREQREJECTED);
+  }
+}
+
+#define ADOPT_ERR(err) adopt_err(err)
+
 static void * thread_routine(void * arg)
 {
   work_queue_t * work_queue = arg;
@@ -24,14 +41,15 @@ static void * thread_routine(void * arg)
   work_t work;
   err_t  err;
 
-  while ((err = work_queue_pop(work_queue, &work)) != ERROR_OUT_OF_SERVICE)
+  while ((err = work_queue_pop(work_queue, &work)) != E_BADREQ)
   {
-    if (err == SUCCESS)
+    if (err == E_OK)
     {
       work.routine(work.arg);
     }
     else
     {
+      assert(err == E_UNDERFLOW);
       work_queue_wait_while_no_work(work_queue);
     }
   }
@@ -59,6 +77,7 @@ static size_t try_to_create_threads(size_t n, void * context, pthread_t * thread
 tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number)
 {
   assert(p_tpool != NULL);
+  assert(threads_number > 0);
 
   tpool_t      * tpool = NULL;
   work_queue_t * queue = NULL;
@@ -107,7 +126,8 @@ void tpool_destroy(tpool_t * tpool)
 
 tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void * arg)
 {
-  assert(tpool != NULL);
+  assert(tpool   != NULL);
+  assert(routine != NULL);
 
   work_t work =
   {
@@ -117,35 +137,45 @@ tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void *
 
   switch (work_queue_push(tpool->work_queue, &work))
   {
-    case SUCCESS:              return TPOOL_SUCCESS;
-    case ERROR_OUT_OF_SERVICE: return TPOOL_EREQREJECTED;
+    case E_OK:     return TPOOL_SUCCESS;
+    case E_BADREQ: return TPOOL_EREQREJECTED;
 
-    default: assert(!"Expected work_queue_add() return code");
+    default: assert(!"Unexpected return code from work_queue_add()");
   }
 }
 
-void tpool_shutdown(tpool_t * tpool)
+tpool_ret_t tpool_shutdown(tpool_t * tpool)
 {
   assert(tpool != NULL);
 
-  work_queue_stop_accepting(tpool->work_queue);
+  err_t err = work_queue_stop_accepting(tpool->work_queue);
+
+  return ADOPT_ERR(err);
 }
 
-void tpool_join(tpool_t * tpool)
+tpool_ret_t tpool_join(tpool_t * tpool)
 {
   assert(tpool != NULL);
 
   for (size_t i = 0; i < tpool->threads_number; i++)
   {
-    asserting(pthread_join(tpool->threads[i], NULL) == 0);
+    EOK_OR_RETURN(pthread_join(tpool->threads[i], NULL), TPOOL_ESYSFAIL);
   }
+
+  return TPOOL_SUCCESS;
 }
 
-void tpool_join_then_destroy(tpool_t * tpool)
+tpool_ret_t tpool_join_then_destroy(tpool_t * tpool)
 {
   assert(tpool != NULL);
 
-  tpool_join(tpool);
+  if (tpool_join(tpool) != 0)
+  {
+    return TPOOL_ESYSFAIL;
+  }
+
   tpool_destroy(tpool);
+
+  return TPOOL_SUCCESS;
 }
 

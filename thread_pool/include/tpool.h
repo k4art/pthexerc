@@ -41,9 +41,10 @@ void tpool_destroy(tpool_t * tpool);
  * @param[in]     routine  Work routine to be executed.
  * @param[in]     arg      Argument to be passed to the routine.
  *
- * @retval        TPOOL_SUCCESS       Instance is created successfully.
+ * @retval        TPOOL_SUCCESS       Operation succeed.
  * @retval        TPOOL_EMEMALLOC     Failed to allocate memory.
  * @retval        TPOOL_EREQREJECTED  No longer accepts new works.
+ * @retval        TPOOL_ESYSFAIL      System prevented from success.
  */
 tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void * arg);
 
@@ -51,8 +52,11 @@ tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void *
  * @brief         Stops accepting new works
  *
  * @param[in]     tpool
+ *
+ * @retval        TPOOL_SUCCESS       Operation succeed.
+ * @retval        TPOOL_ESYSFAIL  System prevented from success.
  */
-void tpool_shutdown(tpool_t * tpool);
+tpool_ret_t tpool_shutdown(tpool_t * tpool);
 
 /**
  * @brief         Joins all threads in the pool.
@@ -60,8 +64,11 @@ void tpool_shutdown(tpool_t * tpool);
  * @note          The thread will not be unblocked, if the pool was not shutdown.
  *
  * @param[in]     tpool
+ *
+ * @retval        TPOOL_SUCCESS   Operation succeed.
+ * @retval        TPOOL_ESYSFAIL  System prevented from success.
  */
-void tpool_join(tpool_t * tpool);
+tpool_ret_t tpool_join(tpool_t * tpool);
 
 /**
  * @brief         Joins all threads in the pool, then destroys it.
@@ -69,8 +76,11 @@ void tpool_join(tpool_t * tpool);
  * @note          The thread will not be unblocked, if the pool was not shutdown.
  *
  * @param[in]     tpool
+ *
+ * @retval        TPOOL_SUCCESS   Operation succeed.
+ * @retval        TPOOL_ESYSFAIL  System prevented from success.
  */
-void tpool_join_then_destroy(tpool_t * tpool);
+tpool_ret_t tpool_join_then_destroy(tpool_t * tpool);
 
 #endif
 
