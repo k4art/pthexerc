@@ -49,11 +49,13 @@ void tpool_destroy(tpool_t * tpool);
 tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void * arg);
 
 /**
- * @brief         Stops accepting new works
+ * @brief         Stops accepting new works.
+ *
+ * @note          Repeated calls have no effects.
  *
  * @param[in]     tpool
  *
- * @retval        TPOOL_SUCCESS       Operation succeed.
+ * @retval        TPOOL_SUCCESS   Operation succeed.
  * @retval        TPOOL_ESYSFAIL  System prevented from success.
  */
 tpool_ret_t tpool_shutdown(tpool_t * tpool);
@@ -66,7 +68,7 @@ tpool_ret_t tpool_shutdown(tpool_t * tpool);
  * @param[in]     tpool
  *
  * @retval        TPOOL_SUCCESS   Operation succeed.
- * @retval        TPOOL_ESYSFAIL  System prevented from success.
+ * @retval        TPOOL_ESYSFAIL  Some threads could not join.
  */
 tpool_ret_t tpool_join(tpool_t * tpool);
 
@@ -78,7 +80,8 @@ tpool_ret_t tpool_join(tpool_t * tpool);
  * @param[in]     tpool
  *
  * @retval        TPOOL_SUCCESS   Operation succeed.
- * @retval        TPOOL_ESYSFAIL  System prevented from success.
+ * @retval        TPOOL_ESYSFAIL  Some threads could not join.
+ *                                In this case tpool was not destroyed.
  */
 tpool_ret_t tpool_join_then_destroy(tpool_t * tpool);
 
