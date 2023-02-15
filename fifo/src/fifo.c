@@ -61,7 +61,16 @@ fifo_ret_t fifo_destroy(fifo_t * fifo)
 {
   assert(fifo != NULL);
 
-  // TODO: destroy the remaining elements
+  fifo_node_t * node = NULL;
+  fifo_node_t * next = fifo->head;
+
+  while (next != NULL)
+  {
+    node = next;
+    next = node->next;
+
+    free(node);
+  }
 
   free(fifo);
 
