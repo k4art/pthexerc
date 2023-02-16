@@ -17,29 +17,13 @@ struct tpool_s
   pthread_t      threads[];
 };
 
-static tpool_ret_t adopt_err(err_t err)
-{
-  switch (err)
-  {
-    case E_OK:        return TPOOL_SUCCESS;
-    case E_SYSFAIL:   return TPOOL_ESYSFAIL;
-    case E_BADREQ:    return TPOOL_EREQREJECTED;
-    case E_MEMALLOC:  return TPOOL_EMEMALLOC;
-
-    // these errors require special treatment
-    case E_UNDERFLOW:
-    case E_OVERFLOW:  return (assert(false), TPOOL_EREQREJECTED);
-  }
-}
-
-#define ADOPT_ERR(err) adopt_err(err)
-
-#define ARG_SHOULD_BE(expr)                    \
-  do {                                         \
-    bool ok = (expr);                          \
-    assert(ok && "Invalid argument: " #expr);  \
-    if (!(expr))                               \
-      return TPOOL_EINVARG;                    \
+#define CHECK_PARAM(expr)           \
+  do {                              \
+    if (!(expr))                    \
+    {                               \
+      fprintf(stderr, "[TPOOL_EINVARG]: invalid argument at %s(): %s\n", __FUNCTION__, #expr); \
+      return TPOOL_EINVARG;         \
+    }                               \
   } while (0)
 
 static void * thread_routine(void * arg)
@@ -88,8 +72,8 @@ static size_t try_to_create_threads(size_t n, void * context, pthread_t * thread
 
 tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number)
 {
-  ARG_SHOULD_BE(p_tpool != NULL);
-  ARG_SHOULD_BE(threads_number > 0);
+  CHECK_PARAM(p_tpool != NULL);
+  CHECK_PARAM(threads_number > 0);
 
   tpool_t      * tpool = NULL;
   work_queue_t * queue = NULL;
@@ -129,7 +113,7 @@ try_failure_1: return TPOOL_EMEMALLOC;
 
 tpool_ret_t tpool_destroy(tpool_t * tpool)
 {
-  ARG_SHOULD_BE(tpool != NULL);
+  CHECK_PARAM(tpool != NULL);
 
   work_queue_destroy(tpool->work_queue);
 
@@ -140,8 +124,8 @@ tpool_ret_t tpool_destroy(tpool_t * tpool)
 
 tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void * arg)
 {
-  ARG_SHOULD_BE(tpool   != NULL);
-  ARG_SHOULD_BE(routine != NULL);
+  CHECK_PARAM(tpool != NULL);
+  CHECK_PARAM(routine != NULL);
 
   work_t work =
   {
@@ -154,22 +138,22 @@ tpool_ret_t tpool_add_work(tpool_t * tpool, tpool_work_routine_t routine, void *
     case E_OK:     return TPOOL_SUCCESS;
     case E_BADREQ: return TPOOL_EREQREJECTED;
 
-    default: assert(!"Unexpected return code from work_queue_add()");
+    default: UNREACHABLE();
   }
 }
 
 tpool_ret_t tpool_shutdown(tpool_t * tpool)
 {
-  ARG_SHOULD_BE(tpool != NULL);
+  CHECK_PARAM(tpool != NULL);
 
   err_t err = work_queue_stop_accepting(tpool->work_queue);
 
-  return ADOPT_ERR(err);
+  return (tpool_ret_t) err;
 }
 
 tpool_ret_t tpool_join(tpool_t * tpool)
 {
-  ARG_SHOULD_BE(tpool != NULL);
+  CHECK_PARAM(tpool != NULL);
 
   bool sysfail = false;
 
@@ -185,9 +169,9 @@ tpool_ret_t tpool_join(tpool_t * tpool)
 
 tpool_ret_t tpool_join_then_destroy(tpool_t * tpool)
 {
-  ARG_SHOULD_BE(tpool != NULL);
+  CHECK_PARAM(tpool != NULL);
 
-  if (tpool_join(tpool) != 0)
+  if (tpool_join(tpool) != TPOOL_SUCCESS)
   {
     return TPOOL_ESYSFAIL;
   }

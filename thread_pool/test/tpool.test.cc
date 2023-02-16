@@ -5,11 +5,8 @@ extern "C"
   #include "tpool.h"
 }
 
-TEST(TPoolNDebug, handles_invalid_arguments)
+TEST(TPool, handles_invalid_arguments)
 {
-#if !defined(NDEBUG)
-  GTEST_SKIP();
-#endif
   tpool_t * tpool = NULL;
   
   EXPECT_EQ(tpool_create(NULL, 8),   TPOOL_EINVARG);

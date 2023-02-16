@@ -75,28 +75,33 @@ err_t work_queue_push(work_queue_t * work_queue, const work_t * p_work)
   err_t ret = E_OK;
 
   WORK_QUEUE_LOCK(work_queue);
-  {
-    bool should_wakeup = fifo_is_empty(work_queue->fifo);
 
-    if (work_queue->stopped_accepting)
+  bool should_wakeup = fifo_is_empty(work_queue->fifo);
+
+  if (work_queue->stopped_accepting)
+  {
+    ret = E_BADREQ;
+    goto finish;
+  }
+
+  if (fifo_enqueue(work_queue->fifo, p_work) != FIFO_SUCCESS)
+  {
+    ret = E_MEMALLOC;
+    goto finish;
+  }
+
+  if (should_wakeup) 
+  {
+    if (pthread_cond_broadcast(&work_queue->no_work_cv) != 0)
     {
-      ret = E_BADREQ;
-    }
-    else
-    {
-      if (fifo_enqueue(work_queue->fifo, p_work) == FIFO_SUCCESS)
-      {
-        if (should_wakeup) 
-        {
-          EOK_OR_RETURN(pthread_cond_broadcast(&work_queue->no_work_cv), E_SYSFAIL);
-        }
-      }
-      else
-      {
-        ret = E_MEMALLOC;
-      }
+      ret = E_SYSFAIL;
+      goto finish;
     }
   }
+
+  assert(ret == E_OK);
+
+finish:
   WORK_QUEUE_UNLOCK(work_queue);
 
   return ret;
@@ -134,6 +139,7 @@ err_t work_queue_pop(work_queue_t * work_queue, work_t * p_work)
 err_t work_queue_stop_accepting(work_queue_t * work_queue)
 {
   assert(work_queue != NULL);
+  err_t err = E_OK;
 
   WORK_QUEUE_LOCK(work_queue);
   {
@@ -141,11 +147,14 @@ err_t work_queue_stop_accepting(work_queue_t * work_queue)
     {
       work_queue->stopped_accepting = true;
 
-      EOK_OR_RETURN(pthread_cond_broadcast(&work_queue->no_work_cv), E_SYSFAIL);
+      if (pthread_cond_broadcast(&work_queue->no_work_cv) != 0)
+      {
+        err = E_SYSFAIL;
+      }
     }
   }
   WORK_QUEUE_UNLOCK(work_queue);
 
-  return E_OK;
+  return err;
 }
 

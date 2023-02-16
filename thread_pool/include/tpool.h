@@ -7,11 +7,11 @@ typedef struct tpool_s tpool_t;
 
 typedef enum tpool_ret_e
 {
-  TPOOL_SUCCESS = 0,
+  TPOOL_SUCCESS      = 0,
+  TPOOL_ESYSFAIL     = 1,
+  TPOOL_EMEMALLOC    = 2,
+  TPOOL_EREQREJECTED = 3,
   TPOOL_EINVARG,
-  TPOOL_ESYSFAIL,
-  TPOOL_EMEMALLOC,
-  TPOOL_EREQREJECTED,
 } tpool_ret_t;
 
 typedef void (* tpool_work_routine_t)(void * context);
