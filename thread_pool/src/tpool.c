@@ -81,7 +81,7 @@ tpool_ret_t tpool_create(tpool_t ** p_tpool, size_t threads_number)
   size_t size = sizeof(tpool_t) + sizeof(pthread_t) * threads_number;
 
   TRY_NEW(1, tpool = malloc(size));
-  TRY_NEW(2, queue = work_queue_create());
+  TRY_NEW(1, queue = work_queue_create());
 
   size_t threads_created = try_to_create_threads(threads_number, queue, tpool->threads);
 
@@ -104,20 +104,20 @@ rollback:
   }
 
   tpool_destroy(tpool);
-
   return TPOOL_ESYSFAIL;
 
-try_failure_2: free(tpool);
-try_failure_1: return TPOOL_EMEMALLOC;
+try_failure_1:
+  tpool_destroy(tpool);
+  return TPOOL_EMEMALLOC;
 }
 
 tpool_ret_t tpool_destroy(tpool_t * tpool)
 {
-  CHECK_PARAM(tpool != NULL);
-
-  work_queue_destroy(tpool->work_queue);
-
-  free(tpool);
+  if (tpool != NULL)
+  {
+    work_queue_destroy(tpool->work_queue);
+    free(tpool);
+  }
 
   return TPOOL_SUCCESS;
 }
@@ -159,9 +159,10 @@ tpool_ret_t tpool_join(tpool_t * tpool)
 
   for (size_t i = 0; i < tpool->threads_number; i++)
   {
-    int ret = pthread_join(tpool->threads[i], NULL);
-
-    if (ret != 0) sysfail = true;
+    if (pthread_join(tpool->threads[i], NULL) != 0)
+    {
+      sysfail = true;
+    }
   }
 
   return sysfail ? TPOOL_ESYSFAIL : TPOOL_SUCCESS;
@@ -177,7 +178,6 @@ tpool_ret_t tpool_join_then_destroy(tpool_t * tpool)
   }
 
   tpool_destroy(tpool);
-
   return TPOOL_SUCCESS;
 }
 

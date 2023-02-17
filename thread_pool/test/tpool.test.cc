@@ -16,7 +16,8 @@ TEST(TPool, handles_invalid_arguments)
   EXPECT_EQ(tpool_shutdown(NULL), TPOOL_EINVARG);
   EXPECT_EQ(tpool_join(NULL),     TPOOL_EINVARG);
   EXPECT_EQ(tpool_join_then_destroy(NULL), TPOOL_EINVARG);
-  EXPECT_EQ(tpool_destroy(NULL), TPOOL_EINVARG);
+
+  EXPECT_EQ(tpool_destroy(NULL), TPOOL_SUCCESS);
 }
 
 TEST(TPoolSingleThreaded, joins_when_no_works_given)

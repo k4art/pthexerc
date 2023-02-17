@@ -41,7 +41,7 @@ try_failure_1: return NULL;
 
 void work_queue_destroy(work_queue_t * work_queue)
 {
-  assert(work_queue != NULL);
+  if (work_queue == NULL) return;
 
   asserting_eok(fifo_destroy(work_queue->fifo));
   
